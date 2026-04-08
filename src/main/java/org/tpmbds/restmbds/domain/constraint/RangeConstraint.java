@@ -1,6 +1,6 @@
 package org.tpmbds.restmbds.domain.constraint;
 
-public class RangeConstraint implements Constraint {
+public class RangeConstraint extends Constraint {
 
     private final double min;
     private final double max;

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class EnumFieldType implements FieldType {
+public class EnumFieldType extends FieldType {
 
     private final EnumGenerator generator;
 
@@ -29,6 +29,7 @@ public class EnumFieldType implements FieldType {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Constraint createConstraint(Map<String, Object> config) {
         List<String> values = (List<String>) config.get("values");
         return new EnumConstraint(values);

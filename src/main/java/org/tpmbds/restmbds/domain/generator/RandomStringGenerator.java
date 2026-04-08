@@ -1,15 +1,17 @@
 package org.tpmbds.restmbds.domain.generator;
 
 import org.springframework.stereotype.Component;
-import org.tpmbds.restmbds.model.entity.AttributeEntity;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Component
 public class RandomStringGenerator implements DataGenerator {
 
     @Override
-    public Object generate(AttributeEntity attribute) {
-        return UUID.randomUUID().toString().substring(0, 8);
+    public Object generate(Map<String, Object> config, int rowIndex) {
+        int length = ((Number) config.getOrDefault("length", 8)).intValue();
+        String raw = UUID.randomUUID().toString().replace("-", "");
+        return raw.substring(0, Math.min(length, raw.length()));
     }
 }

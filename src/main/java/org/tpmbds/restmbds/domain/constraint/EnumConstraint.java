@@ -2,7 +2,7 @@ package org.tpmbds.restmbds.domain.constraint;
 
 import java.util.List;
 
-public class EnumConstraint implements Constraint {
+public class EnumConstraint extends Constraint {
 
     private final List<String> values;
 

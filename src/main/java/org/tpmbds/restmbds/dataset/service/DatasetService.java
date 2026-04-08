@@ -1,77 +1,116 @@
 package org.tpmbds.restmbds.dataset.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.tpmbds.restmbds.common.exception.ResourceNotFoundException;
+import org.tpmbds.restmbds.dataset.dto.response.PreviewResponse;
+import org.tpmbds.restmbds.domain.constraint.Constraint;
+import org.tpmbds.restmbds.domain.fieldtype.FieldType;
 import org.tpmbds.restmbds.domain.fieldtype.FieldTypeRegistry;
+import org.tpmbds.restmbds.model.entity.AttributeEntity;
+import org.tpmbds.restmbds.model.entity.EntityModelEntity;
+import org.tpmbds.restmbds.model.mapper.AttributeMapper;
+import org.tpmbds.restmbds.project.entity.DatasetProjectEntity;
 import org.tpmbds.restmbds.project.repository.ProjectRepository;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
 @Service
 public class DatasetService {
 
+    private static final int MAX_RETRIES = 100;
+
     private final ProjectRepository repo;
     private final FieldTypeRegistry registry;
-    private final ObjectMapper mapper;
+    private final AttributeMapper attributeMapper;
 
     public DatasetService(ProjectRepository repo,
                           FieldTypeRegistry registry,
-                          ObjectMapper mapper) {
+                          AttributeMapper attributeMapper) {
         this.repo = repo;
         this.registry = registry;
-        this.mapper = mapper;
+        this.attributeMapper = attributeMapper;
     }
 
-    public Map<String, List<Map<String,Object>>> preview(Long id) {
+    @Transactional(readOnly = true)
+    public PreviewResponse preview(Long projectId) {
+        DatasetProjectEntity project = repo.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + projectId));
 
-        var project = repo.findById(id).orElseThrow();
+        Map<String, List<Map<String, Object>>> data = new LinkedHashMap<>();
 
-        Map<String, List<Map<String,Object>>> result = new HashMap<>();
+        // On ne traite que les entités racines (sans parent)
+        project.getEntities().stream()
+                .filter(e -> e.getParentEntity() == null)
+                .forEach(entity -> {
+                    int size = resolveSize(entity, project);
+                    List<Map<String, Object>> rows = new ArrayList<>(size);
 
-        for (var entity : project.getEntities()) {
+                    for (int rowIndex = 0; rowIndex < size; rowIndex++) {
+                        Map<String, Object> row = generateRow(entity, rowIndex);
 
-            List<Map<String,Object>> rows = new ArrayList<>();
+                        // Embed les sous-entités comme tableau dans la ligne parente
+                        for (EntityModelEntity sub : entity.getSubEntities()) {
+                            row.put(sub.getName(), generateSubRows(sub, project));
+                        }
 
-            int size = entity.getRowCount() != null
-                    ? entity.getRowCount()
-                    : project.getSize();
+                        rows.add(row);
+                    }
 
-            for (int i = 0; i < size; i++) {
+                    data.put(entity.getName(), rows);
+                });
 
-                Map<String,Object> row = new HashMap<>();
+        return new PreviewResponse(projectId, data);
+    }
 
-                for (var attr : entity.getAttributes()) {
+    // ─── Génération d'une liste de lignes pour une sous-entité ───────────────
 
-                    var fieldType = registry.getByCode(attr.getFieldTypeCode());
+    private List<Map<String, Object>> generateSubRows(EntityModelEntity subEntity,
+                                                       DatasetProjectEntity project) {
+        int size = resolveSize(subEntity, project);
+        List<Map<String, Object>> rows = new ArrayList<>(size);
 
-                    Map<String,Object> config = fromJson(attr.getConstraintJson());
+        for (int rowIndex = 0; rowIndex < size; rowIndex++) {
+            Map<String, Object> row = generateRow(subEntity, rowIndex);
 
-                    var constraint = fieldType.createConstraint(config);
-                    var generator = fieldType.getGenerator();
-
-                    Object value;
-
-                    do {
-                        value = generator.generate(attr);
-                    } while (!constraint.isValid(value));
-
-                    row.put(attr.getName(), value);
-                }
-
-                rows.add(row);
+            // Récursion : sous-sous-entités
+            for (EntityModelEntity nested : subEntity.getSubEntities()) {
+                row.put(nested.getName(), generateSubRows(nested, project));
             }
 
-            result.put(entity.getName(), rows);
+            rows.add(row);
         }
 
-        return result;
+        return rows;
     }
 
-    private Map<String,Object> fromJson(String json) {
-        try {
-            return mapper.readValue(json, Map.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    // ─── Génération d'une ligne (champs uniquement, sans sous-entités) ────────
+
+    private Map<String, Object> generateRow(EntityModelEntity entity, int rowIndex) {
+        Map<String, Object> row = new LinkedHashMap<>();
+
+        for (AttributeEntity attr : entity.getAttributes()) {
+            FieldType fieldType = registry.getByCode(attr.getFieldTypeCode());
+            Map<String, Object> config = attributeMapper.deserializeConstraints(attr.getConstraintJson());
+
+            Constraint constraint = fieldType.createConstraint(config);
+            var generator = fieldType.getGenerator();
+
+            Object value = null;
+            for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                value = generator.generate(config, rowIndex);
+                if (constraint.isValid(value)) break;
+            }
+
+            row.put(attr.getName(), value);
         }
+
+        return row;
+    }
+
+    // ─── Taille d'une entité : rowCount propre ou taille du projet ────────────
+
+    private int resolveSize(EntityModelEntity entity, DatasetProjectEntity project) {
+        return entity.getRowCount() != null ? entity.getRowCount() : project.getSize();
     }
 }

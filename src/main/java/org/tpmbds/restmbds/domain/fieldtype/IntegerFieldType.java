@@ -9,7 +9,7 @@ import org.tpmbds.restmbds.domain.generator.RandomIntegerGenerator;
 import java.util.Map;
 
 @Component
-public class IntegerFieldType implements FieldType {
+public class IntegerFieldType extends FieldType {
 
     private final RandomIntegerGenerator generator;
 

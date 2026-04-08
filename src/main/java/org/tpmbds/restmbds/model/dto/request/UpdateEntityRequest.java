@@ -1,5 +1,6 @@
 package org.tpmbds.restmbds.model.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
@@ -11,6 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 public class UpdateEntityRequest {
+
     @NotBlank
     private String name;
 
@@ -19,4 +21,7 @@ public class UpdateEntityRequest {
 
     @NotEmpty
     private List<AttributeRequest> fields;
+
+    @Valid
+    private List<CreateEntityRequest> subEntities;
 }

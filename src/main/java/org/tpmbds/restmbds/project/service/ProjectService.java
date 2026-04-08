@@ -4,11 +4,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tpmbds.restmbds.common.exception.ResourceNotFoundException;
 import org.tpmbds.restmbds.model.dto.response.EntityResponse;
+import org.tpmbds.restmbds.model.mapper.EntityModelMapper;
 import org.tpmbds.restmbds.project.dto.request.CreateProjectRequest;
 import org.tpmbds.restmbds.project.dto.request.UpdateProjectRequest;
 import org.tpmbds.restmbds.project.dto.response.ProjectResponse;
 import org.tpmbds.restmbds.project.dto.response.ProjectSummaryResponse;
 import org.tpmbds.restmbds.project.entity.DatasetProjectEntity;
+import org.tpmbds.restmbds.project.mapper.ProjectMapper;
 import org.tpmbds.restmbds.project.repository.ProjectRepository;
 
 import java.util.List;
@@ -18,41 +20,37 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository repo;
+    private final ProjectMapper projectMapper;
+    private final EntityModelMapper entityModelMapper;
 
-    public ProjectService(ProjectRepository repo) {
+    public ProjectService(ProjectRepository repo,
+                          ProjectMapper projectMapper,
+                          EntityModelMapper entityModelMapper) {
         this.repo = repo;
+        this.projectMapper = projectMapper;
+        this.entityModelMapper = entityModelMapper;
     }
 
-    public ProjectResponse create(CreateProjectRequest req) {
-        DatasetProjectEntity entity = new DatasetProjectEntity();
-        entity.setName(req.getName());
-        entity.setSize(req.getSize());
-
-        DatasetProjectEntity saved = repo.save(entity);
+    public ProjectResponse create(CreateProjectRequest request) {
+        DatasetProjectEntity saved = repo.save(projectMapper.toEntity(request));
         return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectSummaryResponse> getAll() {
         return repo.findAll().stream()
-                .map(p -> new ProjectSummaryResponse(p.getId(), p.getName(), p.getSize()))
+                .map(projectMapper::toSummaryResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public ProjectResponse getById(Long id) {
-        DatasetProjectEntity project = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + id));
-        return toResponse(project);
+        return toResponse(findOrThrow(id));
     }
 
-    public ProjectResponse update(Long id, UpdateProjectRequest req) {
-        DatasetProjectEntity project = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + id));
-
-        project.setName(req.getName());
-        project.setSize(req.getSize());
-
+    public ProjectResponse update(Long id, UpdateProjectRequest request) {
+        DatasetProjectEntity project = findOrThrow(id);
+        projectMapper.updateEntity(project, request);
         return toResponse(project);
     }
 
@@ -63,11 +61,18 @@ public class ProjectService {
         repo.deleteById(id);
     }
 
-    private ProjectResponse toResponse(DatasetProjectEntity entity) {
-        List<EntityResponse> entities = entity.getEntities().stream()
-                .map(e -> new EntityResponse(e.getId(), e.getName(), e.getRowCount(), List.of()))
+    private ProjectResponse toResponse(DatasetProjectEntity project) {
+        // On n'inclut que les entités racines : les sous-entités sont embarquées
+        // récursivement dans leur parent via entityModelMapper.toResponse().
+        List<EntityResponse> entityResponses = project.getEntities().stream()
+                .filter(e -> e.getParentEntity() == null)
+                .map(entityModelMapper::toResponse)
                 .toList();
+        return projectMapper.toResponse(project, entityResponses);
+    }
 
-        return new ProjectResponse(entity.getId(), entity.getName(), entity.getSize(), entities);
+    private DatasetProjectEntity findOrThrow(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + id));
     }
 }
