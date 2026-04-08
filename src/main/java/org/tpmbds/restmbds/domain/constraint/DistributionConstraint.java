@@ -1,6 +1,6 @@
 package org.tpmbds.restmbds.domain.constraint;
 
-public class DistributionConstraint implements Constraint {
+public class DistributionConstraint extends Constraint {
 
     private final String type;
 

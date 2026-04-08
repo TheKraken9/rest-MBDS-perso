@@ -2,24 +2,24 @@ package org.tpmbds.restmbds.domain.fieldtype;
 
 import org.springframework.stereotype.Component;
 import org.tpmbds.restmbds.domain.constraint.Constraint;
-import org.tpmbds.restmbds.domain.constraint.EmailConstraint;
+import org.tpmbds.restmbds.domain.constraint.NoConstraint;
+import org.tpmbds.restmbds.domain.generator.AutoIncrementGenerator;
 import org.tpmbds.restmbds.domain.generator.DataGenerator;
-import org.tpmbds.restmbds.domain.generator.EmailGenerator;
 
 import java.util.Map;
 
 @Component
-public class EmailFieldType extends FieldType {
+public class AutoIncrementFieldType extends FieldType {
 
-    private final EmailGenerator generator;
+    private final AutoIncrementGenerator generator;
 
-    public EmailFieldType(EmailGenerator generator) {
+    public AutoIncrementFieldType(AutoIncrementGenerator generator) {
         this.generator = generator;
     }
 
     @Override
     public String code() {
-        return "EMAIL";
+        return "AUTOINCREMENT";
     }
 
     @Override
@@ -29,7 +29,6 @@ public class EmailFieldType extends FieldType {
 
     @Override
     public Constraint createConstraint(Map<String, Object> config) {
-        String domain = (String) config.getOrDefault("domain", "example.com");
-        return new EmailConstraint(domain);
+        return new NoConstraint();
     }
 }

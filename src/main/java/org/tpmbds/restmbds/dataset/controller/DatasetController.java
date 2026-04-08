@@ -27,12 +27,19 @@ public class DatasetController {
 
     @GetMapping("/{id}/export")
     public ResponseEntity<String> export(@PathVariable Long id,
-                                         @RequestParam String format) {
+                                         @RequestParam(defaultValue = "json") String format) {
         String content = exportService.exportProject(id, format);
+        String filename = "dataset." + format.toLowerCase();
+
+        MediaType mediaType = switch (format.toLowerCase()) {
+            case "json" -> MediaType.APPLICATION_JSON;
+            case "xml"  -> MediaType.APPLICATION_XML;
+            default     -> MediaType.TEXT_PLAIN;
+        };
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=dataset." + format)
-                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(mediaType)
                 .body(content);
     }
 }

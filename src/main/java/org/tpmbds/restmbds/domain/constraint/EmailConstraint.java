@@ -1,6 +1,6 @@
 package org.tpmbds.restmbds.domain.constraint;
 
-public class EmailConstraint implements Constraint {
+public class EmailConstraint extends Constraint {
 
     private final String domain;
 

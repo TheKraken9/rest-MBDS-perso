@@ -1,14 +1,21 @@
 package org.tpmbds.restmbds.dataset.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.tpmbds.restmbds.common.exception.ResourceNotFoundException;
+import org.tpmbds.restmbds.dataset.dto.response.PreviewResponse;
+import org.tpmbds.restmbds.domain.constraint.Constraint;
+import org.tpmbds.restmbds.domain.fieldtype.FieldType;
 import org.tpmbds.restmbds.domain.fieldtype.FieldTypeRegistry;
 import org.tpmbds.restmbds.project.repository.ProjectRepository;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
 @Service
 public class DatasetService {
+
+    private static final int MAX_RETRIES = 100;
 
     private final ProjectRepository repo;
     private final FieldTypeRegistry registry;
@@ -22,38 +29,31 @@ public class DatasetService {
         this.mapper = mapper;
     }
 
-    public Map<String, List<Map<String,Object>>> preview(Long id) {
+    public PreviewResponse preview(Long projectId) {
+        var project = repo.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + projectId));
 
-        var project = repo.findById(id).orElseThrow();
-
-        Map<String, List<Map<String,Object>>> result = new HashMap<>();
+        Map<String, List<Map<String, Object>>> data = new LinkedHashMap<>();
 
         for (var entity : project.getEntities()) {
+            int size = entity.getRowCount() != null ? entity.getRowCount() : project.getSize();
+            List<Map<String, Object>> rows = new ArrayList<>(size);
 
-            List<Map<String,Object>> rows = new ArrayList<>();
-
-            int size = entity.getRowCount() != null
-                    ? entity.getRowCount()
-                    : project.getSize();
-
-            for (int i = 0; i < size; i++) {
-
-                Map<String,Object> row = new HashMap<>();
+            for (int rowIndex = 0; rowIndex < size; rowIndex++) {
+                Map<String, Object> row = new LinkedHashMap<>();
 
                 for (var attr : entity.getAttributes()) {
+                    FieldType fieldType = registry.getByCode(attr.getFieldTypeCode());
+                    Map<String, Object> config = parseConstraintJson(attr.getConstraintJson());
 
-                    var fieldType = registry.getByCode(attr.getFieldTypeCode());
-
-                    Map<String,Object> config = fromJson(attr.getConstraintJson());
-
-                    var constraint = fieldType.createConstraint(config);
+                    Constraint constraint = fieldType.createConstraint(config);
                     var generator = fieldType.getGenerator();
 
-                    Object value;
-
-                    do {
-                        value = generator.generate(attr);
-                    } while (!constraint.isValid(value));
+                    Object value = null;
+                    for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                        value = generator.generate(config, rowIndex);
+                        if (constraint.isValid(value)) break;
+                    }
 
                     row.put(attr.getName(), value);
                 }
@@ -61,17 +61,18 @@ public class DatasetService {
                 rows.add(row);
             }
 
-            result.put(entity.getName(), rows);
+            data.put(entity.getName(), rows);
         }
 
-        return result;
+        return new PreviewResponse(projectId, data);
     }
 
-    private Map<String,Object> fromJson(String json) {
+    private Map<String, Object> parseConstraintJson(String json) {
+        if (json == null || json.isBlank()) return Collections.emptyMap();
         try {
-            return mapper.readValue(json, Map.class);
+            return mapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return Collections.emptyMap();
         }
     }
 }

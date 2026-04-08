@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class EnumFieldType implements FieldType {
+public class EnumFieldType extends FieldType {
 
     private final EnumGenerator generator;
 
