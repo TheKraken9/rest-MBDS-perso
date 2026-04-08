@@ -29,6 +29,7 @@ public class EnumFieldType extends FieldType {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Constraint createConstraint(Map<String, Object> config) {
         List<String> values = (List<String>) config.get("values");
         return new EnumConstraint(values);

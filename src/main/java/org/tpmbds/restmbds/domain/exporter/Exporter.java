@@ -25,7 +25,7 @@ public abstract class Exporter {
      * Point d'entrée public — implémente le Template Method.
      * Construit le document complet à partir des données générées.
      */
-    public final String export(Map<String, List<Map<String, Object>>> data) {
+    public String export(Map<String, List<Map<String, Object>>> data) {
         StringBuilder sb = new StringBuilder();
         appendDocumentStart(sb, data);
         for (var entry : data.entrySet()) {
