@@ -1,6 +1,7 @@
 package org.tpmbds.restmbds.dataset.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.tpmbds.restmbds.common.exception.ResourceNotFoundException;
 import org.tpmbds.restmbds.dataset.dto.response.PreviewResponse;
 import org.tpmbds.restmbds.domain.constraint.Constraint;
@@ -31,6 +32,7 @@ public class DatasetService {
         this.attributeMapper = attributeMapper;
     }
 
+    @Transactional(readOnly = true)
     public PreviewResponse preview(Long projectId) {
         DatasetProjectEntity project = repo.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + projectId));

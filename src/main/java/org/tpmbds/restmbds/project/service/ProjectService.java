@@ -62,7 +62,10 @@ public class ProjectService {
     }
 
     private ProjectResponse toResponse(DatasetProjectEntity project) {
+        // On n'inclut que les entités racines : les sous-entités sont embarquées
+        // récursivement dans leur parent via entityModelMapper.toResponse().
         List<EntityResponse> entityResponses = project.getEntities().stream()
+                .filter(e -> e.getParentEntity() == null)
                 .map(entityModelMapper::toResponse)
                 .toList();
         return projectMapper.toResponse(project, entityResponses);

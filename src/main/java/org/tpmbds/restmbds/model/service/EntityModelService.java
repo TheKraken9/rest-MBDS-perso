@@ -43,7 +43,7 @@ public class EntityModelService {
         DatasetProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + projectId));
 
-        validateFieldTypes(request.getFields());
+        validateFieldTypesRecursive(request);
 
         EntityModelEntity entity = entityModelMapper.toEntity(request, project);
         return entityModelMapper.toResponse(entityRepository.save(entity));
@@ -51,7 +51,9 @@ public class EntityModelService {
 
     @Transactional(readOnly = true)
     public List<EntityResponse> list(Long projectId) {
-        return entityRepository.findByProjectId(projectId).stream()
+        // On ne retourne que les entités racines : les sous-entités sont
+        // déjà embarquées dans la réponse de leur parent via toResponse().
+        return entityRepository.findByProjectIdAndParentEntityIsNull(projectId).stream()
                 .map(entityModelMapper::toResponse)
                 .toList();
     }
@@ -63,7 +65,7 @@ public class EntityModelService {
 
     public EntityResponse update(Long id, UpdateEntityRequest request) {
         EntityModelEntity entity = findOrThrow(id);
-        validateFieldTypes(request.getFields());
+        validateFieldTypesRecursive(request);
         entityModelMapper.updateEntity(entity, request);
         return entityModelMapper.toResponse(entity);
     }
@@ -75,10 +77,25 @@ public class EntityModelService {
         entityRepository.deleteById(id);
     }
 
-    private void validateFieldTypes(List<AttributeRequest> fields) {
+    // ─── Validation récursive des types de champs ────────────────────────────
+
+    private void validateFieldTypesRecursive(CreateEntityRequest request) {
+        validateFields(request.getFields());
+        if (request.getSubEntities() != null) {
+            request.getSubEntities().forEach(this::validateFieldTypesRecursive);
+        }
+    }
+
+    private void validateFieldTypesRecursive(UpdateEntityRequest request) {
+        validateFields(request.getFields());
+        if (request.getSubEntities() != null) {
+            request.getSubEntities().forEach(this::validateFieldTypesRecursive);
+        }
+    }
+
+    private void validateFields(List<AttributeRequest> fields) {
         if (fields == null) return;
         for (AttributeRequest field : fields) {
-            // Throws BadRequestException if the type is unknown
             fieldTypeRegistry.getByCode(field.getType());
         }
     }
