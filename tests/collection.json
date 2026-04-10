@@ -1,0 +1,1248 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Dataset Generator API",
+    "description": "Complete test suite for the Dataset Generator REST API.\n\nFolders:\n- A. Unit Tests: individual endpoint smoke tests\n- B. Error Cases: 4xx validation and not-found scenarios\n- C. Integration Scenario: full lifecycle with variable chaining",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "A. Unit Tests",
+      "description": "Individual endpoint tests that verify basic success responses and response structure.",
+      "item": [
+        {
+          "name": "A1 - GET all projects (empty list)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is a JSON array', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "A2 - POST create project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Response has id', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('id');",
+                  "    pm.expect(body.id).to.be.a('number');",
+                  "});",
+                  "pm.test('Response has name', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('Test Project A2');",
+                  "});",
+                  "pm.test('Response has size', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.size).to.eql(5);",
+                  "});",
+                  "// Save id for cleanup",
+                  "pm.environment.set('unit_project_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Project A2\",\n  \"size\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "A3 - GET project by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response id matches', function () {",
+                  "    var body = pm.response.json();",
+                  "    var expectedId = parseInt(pm.environment.get('unit_project_id'));",
+                  "    pm.expect(body.id).to.eql(expectedId);",
+                  "});",
+                  "pm.test('Entities list is present', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('entities');",
+                  "    pm.expect(body.entities).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "A4 - PUT update project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Name updated', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('Updated Project A4');",
+                  "});",
+                  "pm.test('Size updated', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.size).to.eql(10);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Project A4\",\n  \"size\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "A5 - POST create entity in project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Entity has id', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('id');",
+                  "});",
+                  "pm.test('Entity name is correct', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('User');",
+                  "});",
+                  "pm.test('Entity has fields array', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.fields).to.be.an('array');",
+                  "    pm.expect(body.fields).to.have.lengthOf.above(0);",
+                  "});",
+                  "pm.environment.set('unit_entity_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"User\",\n  \"fields\": [\n    { \"name\": \"id\",    \"type\": \"AUTO_INCREMENT\", \"constraints\": { \"start\": 1, \"step\": 1 } },\n    { \"name\": \"name\",  \"type\": \"NAME\",           \"constraints\": { \"language\": \"fr\" } },\n    { \"name\": \"age\",   \"type\": \"INTEGER\",        \"constraints\": { \"min\": 18, \"max\": 65 } },\n    { \"name\": \"email\", \"type\": \"STRING\",         \"constraints\": { \"minLength\": 5, \"maxLength\": 30 } },\n    { \"name\": \"score\", \"type\": \"FLOAT\",          \"constraints\": { \"min\": 0.0, \"max\": 100.0 } },\n    { \"name\": \"active\",\"type\": \"BOOLEAN\",        \"constraints\": {} },\n    { \"name\": \"dob\",   \"type\": \"DATE\",           \"constraints\": { \"after\": \"1960-01-01\", \"before\": \"2005-12-31\" } },\n    { \"name\": \"role\",  \"type\": \"ENUM\",           \"constraints\": { \"values\": [\"ADMIN\", \"USER\", \"GUEST\"] } }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "A6 - GET entity list for project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is a non-empty array', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.be.an('array');",
+                  "    pm.expect(body.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "A7 - GET entity by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Entity id matches', function () {",
+                  "    var body = pm.response.json();",
+                  "    var expectedId = parseInt(pm.environment.get('unit_entity_id'));",
+                  "    pm.expect(body.id).to.eql(expectedId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities/{{unit_entity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities", "{{unit_entity_id}}"]
+            }
+          }
+        },
+        {
+          "name": "A8 - GET preview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has projectId', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('projectId');",
+                  "});",
+                  "pm.test('Response has data map', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('data');",
+                  "    pm.expect(body.data).to.be.an('object');",
+                  "});",
+                  "pm.test('User entity present with 10 rows', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.data).to.have.property('User');",
+                  "    pm.expect(body.data.User).to.be.an('array');",
+                  "    pm.expect(body.data.User).to.have.lengthOf(10);",
+                  "});",
+                  "pm.test('First User row has expected fields', function () {",
+                  "    var row = pm.response.json().data.User[0];",
+                  "    pm.expect(row).to.have.property('id');",
+                  "    pm.expect(row).to.have.property('name');",
+                  "    pm.expect(row).to.have.property('age');",
+                  "    pm.expect(row).to.have.property('email');",
+                  "    pm.expect(row).to.have.property('score');",
+                  "    pm.expect(row).to.have.property('active');",
+                  "    pm.expect(row).to.have.property('dob');",
+                  "    pm.expect(row).to.have.property('role');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}/preview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}", "preview"]
+            }
+          }
+        },
+        {
+          "name": "A9 - GET export JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is text/plain or application/json', function () {",
+                  "    var ct = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(ct).to.satisfy(function(v) {",
+                  "        return v.includes('json') || v.includes('text');",
+                  "    });",
+                  "});",
+                  "pm.test('Body is non-empty', function () {",
+                  "    pm.expect(pm.response.text().length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}/export?format=json",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}", "export"],
+              "query": [{ "key": "format", "value": "json" }]
+            }
+          }
+        },
+        {
+          "name": "A10 - GET export CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body contains CSV header', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.include('id');",
+                  "    pm.expect(body).to.include('name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}/export?format=csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}", "export"],
+              "query": [{ "key": "format", "value": "csv" }]
+            }
+          }
+        },
+        {
+          "name": "A11 - GET export XML",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body contains XML tags', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.include('<');",
+                  "    pm.expect(body).to.include('>');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}/export?format=xml",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}", "export"],
+              "query": [{ "key": "format", "value": "xml" }]
+            }
+          }
+        },
+        {
+          "name": "A12 - DELETE project (cleanup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 or 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{unit_project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{unit_project_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Error Cases",
+      "description": "Validates that the API returns correct 4xx codes for invalid requests.",
+      "item": [
+        {
+          "name": "B1 - GET project 404 (unknown id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Error message is present', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/999999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "999999"]
+            }
+          }
+        },
+        {
+          "name": "B2 - DELETE project 404 (unknown id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/999999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "999999"]
+            }
+          }
+        },
+        {
+          "name": "B3 - POST project 400 (missing name)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"size\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "B4 - POST entity 400 (unknown field type)",
+          "event": [
+            {
+              "listen": "preRequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Create a temporary project for this test",
+                  "const baseUrl = pm.environment.get('base_url') || pm.collectionVariables.get('base_url');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/projects',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ name: 'TempB4', size: 1 }) }",
+                  "}, function(err, res) {",
+                  "    if (!err) pm.environment.set('b4_project_id', res.json().id);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 for unknown field type', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "// Cleanup",
+                  "const baseUrl = pm.environment.get('base_url') || pm.collectionVariables.get('base_url');",
+                  "const pid = pm.environment.get('b4_project_id');",
+                  "if (pid) {",
+                  "    pm.sendRequest({ url: baseUrl + '/api/projects/' + pid, method: 'DELETE' }, function() {});",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BadEntity\",\n  \"fields\": [\n    { \"name\": \"x\", \"type\": \"DOES_NOT_EXIST\", \"constraints\": {} }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{b4_project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{b4_project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "B5 - POST entity 400 (missing entity name)",
+          "event": [
+            {
+              "listen": "preRequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.environment.get('base_url') || pm.collectionVariables.get('base_url');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/projects',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ name: 'TempB5', size: 1 }) }",
+                  "}, function(err, res) {",
+                  "    if (!err) pm.environment.set('b5_project_id', res.json().id);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 for missing entity name', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const baseUrl = pm.environment.get('base_url') || pm.collectionVariables.get('base_url');",
+                  "const pid = pm.environment.get('b5_project_id');",
+                  "if (pid) {",
+                  "    pm.sendRequest({ url: baseUrl + '/api/projects/' + pid, method: 'DELETE' }, function() {});",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{b5_project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{b5_project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "B6 - GET preview 404 (unknown project)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/999999/preview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "999999", "preview"]
+            }
+          }
+        },
+        {
+          "name": "B7 - GET export 400 (unsupported format)",
+          "event": [
+            {
+              "listen": "preRequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.environment.get('base_url') || pm.collectionVariables.get('base_url');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/projects',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ name: 'TempB7', size: 1 }) }",
+                  "}, function(err, res) {",
+                  "    if (!err) pm.environment.set('b7_project_id', res.json().id);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 or 404 for unknown format', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});",
+                  "const baseUrl = pm.environment.get('base_url') || pm.collectionVariables.get('base_url');",
+                  "const pid = pm.environment.get('b7_project_id');",
+                  "if (pid) {",
+                  "    pm.sendRequest({ url: baseUrl + '/api/projects/' + pid, method: 'DELETE' }, function() {});",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{b7_project_id}}/export?format=yaml",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{b7_project_id}}", "export"],
+              "query": [{ "key": "format", "value": "yaml" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "C. Integration Scenario",
+      "description": "Full lifecycle scenario: create project → add entity with sub-entities → preview → export all formats → update entity → delete everything. Variable chaining with pm.environment.set().",
+      "item": [
+        {
+          "name": "C01 - Create project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Project created with correct name', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('E-Commerce Project');",
+                  "    pm.expect(body.size).to.eql(3);",
+                  "});",
+                  "// Chain project_id for subsequent requests",
+                  "pm.environment.set('project_id', pm.response.json().id);",
+                  "console.log('project_id saved:', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"E-Commerce Project\",\n  \"size\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "C02 - Verify project in list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('New project appears in list', function () {",
+                  "    var list = pm.response.json();",
+                  "    var pid = parseInt(pm.environment.get('project_id'));",
+                  "    var found = list.some(function(p) { return p.id === pid; });",
+                  "    pm.expect(found).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "C03 - Create entity with sub-entity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Entity name is Product', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('Product');",
+                  "});",
+                  "pm.test('Sub-entities present', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('subEntities');",
+                  "    pm.expect(body.subEntities).to.be.an('array');",
+                  "    pm.expect(body.subEntities).to.have.lengthOf(1);",
+                  "    pm.expect(body.subEntities[0].name).to.eql('Review');",
+                  "});",
+                  "// Chain entity_id",
+                  "pm.environment.set('entity_id', pm.response.json().id);",
+                  "console.log('entity_id saved:', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Product\",\n  \"fields\": [\n    { \"name\": \"id\",       \"type\": \"AUTO_INCREMENT\", \"constraints\": { \"start\": 100, \"step\": 1 } },\n    { \"name\": \"label\",    \"type\": \"NAME\",           \"constraints\": { \"language\": \"fr\", \"style\": \"full\" } },\n    { \"name\": \"price\",    \"type\": \"FLOAT\",          \"constraints\": { \"min\": 1.0,  \"max\": 999.99 } },\n    { \"name\": \"inStock\",  \"type\": \"BOOLEAN\",        \"constraints\": {} },\n    { \"name\": \"category\", \"type\": \"ENUM\",           \"constraints\": { \"values\": [\"ELECTRONICS\", \"CLOTHING\", \"FOOD\"] } }\n  ],\n  \"subEntities\": [\n    {\n      \"name\": \"Review\",\n      \"rowCount\": 2,\n      \"fields\": [\n        { \"name\": \"author\",  \"type\": \"NAME\",    \"constraints\": { \"language\": \"en\" } },\n        { \"name\": \"rating\",  \"type\": \"INTEGER\", \"constraints\": { \"min\": 1, \"max\": 5 } },\n        { \"name\": \"comment\", \"type\": \"STRING\",  \"constraints\": { \"minLength\": 10, \"maxLength\": 80 } }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "C04 - Create second entity (Order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Entity name is Order', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('Order');",
+                  "});",
+                  "pm.environment.set('order_entity_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Order\",\n  \"rowCount\": 5,\n  \"fields\": [\n    { \"name\": \"orderId\",   \"type\": \"AUTO_INCREMENT\", \"constraints\": { \"start\": 1000, \"step\": 1 } },\n    { \"name\": \"orderDate\", \"type\": \"DATE\",           \"constraints\": { \"after\": \"2023-01-01\", \"before\": \"2024-12-31\" } },\n    { \"name\": \"total\",     \"type\": \"FLOAT\",          \"constraints\": { \"min\": 10.0, \"max\": 5000.0 } },\n    { \"name\": \"status\",    \"type\": \"ENUM\",           \"constraints\": { \"values\": [\"PENDING\", \"SHIPPED\", \"DELIVERED\", \"CANCELLED\"] } }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "C05 - GET entity list (should have 2 root entities)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Exactly 2 root entities (sub-entities not leaked)', function () {",
+                  "    var list = pm.response.json();",
+                  "    pm.expect(list).to.be.an('array');",
+                  "    pm.expect(list).to.have.lengthOf(2);",
+                  "});",
+                  "pm.test('Product has sub-entity Review embedded', function () {",
+                  "    var list = pm.response.json();",
+                  "    var product = list.find(function(e) { return e.name === 'Product'; });",
+                  "    pm.expect(product).to.not.be.undefined;",
+                  "    pm.expect(product.subEntities).to.be.an('array');",
+                  "    pm.expect(product.subEntities[0].name).to.eql('Review');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/entities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "entities"]
+            }
+          }
+        },
+        {
+          "name": "C06 - GET entity by id (Product)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Correct entity returned', function () {",
+                  "    var body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('Product');",
+                  "});",
+                  "pm.test('Sub-entity Review is embedded', function () {",
+                  "    var sub = pm.response.json().subEntities;",
+                  "    pm.expect(sub).to.be.an('array');",
+                  "    pm.expect(sub).to.have.lengthOf(1);",
+                  "    pm.expect(sub[0].name).to.eql('Review');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities/{{entity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities", "{{entity_id}}"]
+            }
+          }
+        },
+        {
+          "name": "C07 - PUT update entity (Product)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Name updated to ProductV2', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('ProductV2');",
+                  "});",
+                  "pm.test('Fields updated', function () {",
+                  "    var fields = pm.response.json().fields;",
+                  "    pm.expect(fields).to.be.an('array');",
+                  "    pm.expect(fields.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ProductV2\",\n  \"fields\": [\n    { \"name\": \"id\",      \"type\": \"AUTO_INCREMENT\", \"constraints\": { \"start\": 200, \"step\": 2 } },\n    { \"name\": \"label\",   \"type\": \"NAME\",           \"constraints\": { \"language\": \"fr\" } },\n    { \"name\": \"price\",   \"type\": \"FLOAT\",          \"constraints\": { \"min\": 5.0,  \"max\": 1999.99 } },\n    { \"name\": \"discount\",\"type\": \"FLOAT\",          \"constraints\": { \"min\": 0.0,  \"max\": 0.5 } }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/entities/{{entity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities", "{{entity_id}}"]
+            }
+          }
+        },
+        {
+          "name": "C08 - GET preview (all field types covered)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has projectId', function () {",
+                  "    pm.expect(pm.response.json().projectId).to.eql(parseInt(pm.environment.get('project_id')));",
+                  "});",
+                  "pm.test('ProductV2 entity in data', function () {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('ProductV2');",
+                  "    pm.expect(data.ProductV2).to.be.an('array');",
+                  "    pm.expect(data.ProductV2).to.have.lengthOf(3);",
+                  "});",
+                  "pm.test('Order entity in data with 5 rows', function () {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('Order');",
+                  "    pm.expect(data.Order).to.have.lengthOf(5);",
+                  "});",
+                  "pm.test('All ProductV2 rows have required fields', function () {",
+                  "    var rows = pm.response.json().data.ProductV2;",
+                  "    rows.forEach(function(row) {",
+                  "        pm.expect(row).to.have.property('id');",
+                  "        pm.expect(row).to.have.property('label');",
+                  "        pm.expect(row).to.have.property('price');",
+                  "        pm.expect(row).to.have.property('discount');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/preview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "preview"]
+            }
+          }
+        },
+        {
+          "name": "C09 - Export JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body is non-empty', function () {",
+                  "    pm.expect(pm.response.text().length).to.be.above(0);",
+                  "});",
+                  "pm.test('Body contains ProductV2', function () {",
+                  "    pm.expect(pm.response.text()).to.include('ProductV2');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/export?format=json",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "export"],
+              "query": [{ "key": "format", "value": "json" }]
+            }
+          }
+        },
+        {
+          "name": "C10 - Export CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('CSV contains entity name header', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.include('ProductV2');",
+                  "});",
+                  "pm.test('CSV contains id column', function () {",
+                  "    pm.expect(pm.response.text()).to.include('id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/export?format=csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "export"],
+              "query": [{ "key": "format", "value": "csv" }]
+            }
+          }
+        },
+        {
+          "name": "C11 - Export XML",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('XML contains opening tag', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.include('<');",
+                  "    pm.expect(body).to.include('>');",
+                  "});",
+                  "pm.test('XML contains entity name', function () {",
+                  "    pm.expect(pm.response.text()).to.include('ProductV2');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/export?format=xml",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "export"],
+              "query": [{ "key": "format", "value": "xml" }]
+            }
+          }
+        },
+        {
+          "name": "C12 - GET project details (entities embedded)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Project has 2 root entities', function () {",
+                  "    var entities = pm.response.json().entities;",
+                  "    pm.expect(entities).to.be.an('array');",
+                  "    pm.expect(entities).to.have.lengthOf(2);",
+                  "});",
+                  "pm.test('Project size is 3', function () {",
+                  "    pm.expect(pm.response.json().size).to.eql(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "C13 - DELETE entity (Order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 or 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/entities/{{order_entity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "entities", "{{order_entity_id}}"]
+            }
+          }
+        },
+        {
+          "name": "C14 - DELETE project (idempotent cleanup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 or 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});",
+                  "// Clear environment variables",
+                  "pm.environment.unset('project_id');",
+                  "pm.environment.unset('entity_id');",
+                  "pm.environment.unset('order_entity_id');",
+                  "console.log('Cleanup complete — all variables unset.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "C15 - Verify project deleted (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Project no longer exists (404)', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
