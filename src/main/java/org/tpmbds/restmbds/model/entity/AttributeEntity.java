@@ -19,11 +19,6 @@ public class AttributeEntity {
     @Column(nullable = false)
     private String fieldTypeCode;
 
-    /**
-     * Configuration de contrainte sérialisée en JSON.
-     * Stockée en base pour être rechargée lors de la génération.
-     * Ex : {"min":18,"max":90,"distribution":"uniform"}
-     */
     @Column(columnDefinition = "TEXT")
     private String constraintJson;
 

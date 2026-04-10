@@ -346,3 +346,7 @@ newman run tests/collection.json \
 > Le rapport HTML généré (`tests/report.html`) donne la vue détaillée par requête. Un exemple de rapport est disponible dans `tests/report-sample.html`.
 
 ---
+
+
+## Linux (erreur de permission, besoin de sudo) : npm install -g newman newman-reporter-htmlextra
+## Windows npm install -g newman newman-reporter-htmlextra
