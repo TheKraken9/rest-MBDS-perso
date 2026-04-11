@@ -312,6 +312,8 @@ npm install -g newman-reporter-htmlextra
 
 ```bash
 # Dans le répertoire du projet
+sur le bouton run
+  ou
 ./gradlew bootRun
 # L’API est disponible sur http://localhost:8080
 ```
