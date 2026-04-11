@@ -6,13 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Génère des noms réalistes (prénoms/noms français par défaut).
- *
- * Config supportée :
- *  - "language" : "fr" (défaut) ou "en"
- *  - "style"    : "firstname" | "lastname" | "firstname_lastname" (défaut)
- */
 @Component
 public class NameGenerator implements DataGenerator {
 
@@ -55,7 +48,7 @@ public class NameGenerator implements DataGenerator {
             case "firstname"           -> first;
             case "lastname"            -> last;
             case "lastname_firstname"  -> last + " " + first;
-            default                    -> first + " " + last; // firstname_lastname
+            default                    -> first + " " + last;
         };
     }
 }

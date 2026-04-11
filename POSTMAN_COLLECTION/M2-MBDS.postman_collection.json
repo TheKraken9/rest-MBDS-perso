@@ -1,0 +1,399 @@
+{
+	"info": {
+		"_postman_id": "97278b1d-bc41-4f40-b5fe-e3793f20ec87",
+		"name": "M2-MBDS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25318832"
+	},
+	"item": [
+		{
+			"name": "Project",
+			"item": [
+				{
+					"name": "Add Project",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Population Malgache\",\n  \"size\": 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/projects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Project List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Population Malagasy\",\n  \"size\": 200\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/projects/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Project",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Entity",
+			"item": [
+				{
+					"name": "Add Entity",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/entities",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"entities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Entity 2",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Product\",\n  \"rowCount\": 30,\n  \"fields\": [\n    {\n      \"name\": \"productId\",\n      \"type\": \"AUTOINCREMENT\",\n      \"constraints\": {\n        \"start\": 1000,\n        \"step\": 5\n      }\n    },\n    {\n      \"name\": \"owner\",\n      \"type\": \"NAME\",\n      \"constraints\": {\n        \"language\": \"en\",\n        \"style\": \"lastname_firstname\"\n      }\n    },\n    {\n      \"name\": \"price\",\n      \"type\": \"INTEGER\",\n      \"constraints\": {\n        \"min\": 5,\n        \"max\": 999\n      }\n    },\n    {\n      \"name\": \"category\",\n      \"type\": \"ENUM\",\n      \"constraints\": {\n        \"values\": [\"ELECTRONICS\", \"CLOTHING\", \"FOOD\", \"SPORTS\"],\n        \"probabilities\": [0.3, 0.25, 0.25, 0.2]\n      }\n    },\n    {\n      \"name\": \"sku\",\n      \"type\": \"STRING\",\n      \"constraints\": {\n        \"length\": 12\n      }\n    },\n    {\n      \"name\": \"releaseDate\",\n      \"type\": \"DATE\",\n      \"constraints\": {\n        \"from\": \"2020-01-01\",\n        \"to\": \"2024-12-31\"\n      }\n    },\n    {\n      \"name\": \"contactEmail\",\n      \"type\": \"EMAIL\",\n      \"constraints\": {\n        \"domain\": \"shop.com\"\n      }\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/entities",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"entities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Entity List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/entities",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"entities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Entity By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/entities/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"entities",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Entity",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"User\",\n  \"rowCount\": 200,\n  \"fields\": [\n    {\n      \"name\": \"id\",\n      \"type\": \"AUTOINCREMENT\",\n      \"constraints\": { \"start\": 1, \"step\": 1 }\n    },\n    {\n      \"name\": \"fullName\",\n      \"type\": \"NAME\",\n      \"constraints\": { \"language\": \"fr\", \"style\": \"firstname_lastname\" }\n    },\n    {\n      \"name\": \"email\",\n      \"type\": \"EMAIL\",\n      \"constraints\": { \"domain\": \"nouveau-domaine.com\" }\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/entities/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"entities",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Entity",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/entities/2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"entities",
+								"2"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Generation/Export",
+			"item": [
+				{
+					"name": "Preview data",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/preview",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"preview"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Export CSV",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/export?format=csv",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"export"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "csv"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Export JSON",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/export?format=json",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"export"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Export XML",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/projects/2/export?format=xml",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"projects",
+								"2",
+								"export"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "xml"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
