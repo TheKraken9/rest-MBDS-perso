@@ -1,3 +1,4 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/UR3vHHhL)
 # Equipes
 ## -ANDRIANIAINA LIANTSOA FEHIZORO
 ## -ANDRIANAMBININA FENITRA TOKINIAINA
@@ -65,8 +66,6 @@ Types supportés :
 
 * STRING
 * INTEGER
-* FLOAT
-* BOOLEAN
 * DATE
 * ENUM
 
@@ -143,7 +142,6 @@ export(entityName: String, data: List<Map<String,Object>>): String
 
 Implémentations :
 
-* `CSVExporter`
 * `XMLExporter`
 
 ---
@@ -280,6 +278,80 @@ Les services dépendent d’abstractions :
 
 ---
 
+
+---
+
+## Modifications apportées à l'architecture initiale
+
+> Cette section explique les changements que nous avons effectués par rapport à la conception initiale, et pourquoi nous les avons faits.
+
+---
+
+### 1. Interfaces → Classes abstraites
+
+**Avant :**
+```
+interface Constraint   { isValid(value): boolean }
+interface FieldType    { code(); getGenerator(); createConstraint() }
+interface Exporter     { export(...): String }
+```
+
+**Après :**
+```
+abstract class Constraint  { abstract isValid(); describe() }
+abstract class FieldType   { abstract code(); abstract getGenerator(); abstract createConstraint() }
+abstract class Exporter    { abstract format(); export() (Template Method) }
+```
+
+**Pourquoi ?**
+
+- `Constraint` : on a ajouté une méthode concrète `describe()` commune à toutes les implémentations. Une interface ne peut pas fournir de comportement partagé de cette façon (sans default, ce qui est moins propre). La classe abstraite est plus adaptée quand toutes les sous-classes partagent du code.
+- `FieldType` : même raison — on voulait pouvoir ajouter de la logique commune aux types de champs sans dupliquer dans chaque implémentation.
+- `Exporter` : on a appliqué le **Template Method Pattern**. La méthode `export()` définit le squelette de l'algorithme (début du document → blocs par entité → fin du document), et chaque sous-classe (`XmlExporter`) redéfinit uniquement `appendEntityBlock()`. `JsonExporter` surcharge directement `export()` car sa structure est différente. Ce pattern évite de répéter la boucle principale dans chaque exporteur.
+
+---
+
+### 2. `Attribute` → `AttributeEntity` : du domaine pur vers la persistance JPA
+
+**Avant (domaine conceptuel) :**
+```java
+class Attribute {
+    String name;
+    FieldType fieldType;      // objet Java
+    Constraint constraint;    // objet Java
+}
+```
+
+**Après (entité JPA persistée en base H2) :**
+```java
+@Entity
+class AttributeEntity {
+    String name;
+    String fieldTypeCode;     // ex: "INTEGER", "ENUM"
+    String constraintJson;    // ex: {"min":18,"max":90}
+}
+```
+
+**Pourquoi ?**
+
+JPA ne peut pas persister des objets polymorphiques (`FieldType`, `Constraint`) sans configuration complexe. On stocke donc un code (chaîne de caractères) et une configuration JSON (sérialisée manuellement). Au moment de la génération, le `FieldTypeRegistry` retrouve le bon objet `FieldType` à partir du code, et `AttributeMapper` désérialise le JSON en `Map<String, Object>`.
+
+---
+
+### 3. Support des sous-entités
+
+L'entité `EntityModelEntity` est **auto-référencée** : elle a un champ `parentEntity` et une liste `subEntities`. Cela permet de modéliser des structures imbriquées comme un `Product` contenant plusieurs `Review`.
+
+La génération est **récursive** : `DatasetService` parcourt d'abord les entités racines (`parentEntity == null`), génère leurs lignes, puis pour chaque sous-entité appelle `generateSubRows()` qui s'appelle elle-même récursivement. Le résultat est un tableau imbriqué dans chaque ligne parente.
+
+---
+
+### 4. Registry Pattern
+
+On utilise un `FieldTypeRegistry` et un `ExporterRegistry` : ce sont des maps (`code → objet`) qui permettent de résoudre dynamiquement le bon type ou exporteur à partir d'une chaîne de caractères. Cela évite les `if/else` ou `switch` et respecte le principe Open/Closed (on ajoute un nouveau type sans toucher au service).
+
+---
+
 ## Tests & QA
 
 Les tests d’API sont automatisés avec **Postman / Newman** et se trouvent dans le dossier `tests/`.
@@ -335,9 +407,9 @@ newman run tests/collection.json \
 │                         │ executed │   failed │
 ├─────────────────────────┼──────────┼──────────┤
 │              iterations │        1 │        0 │
-│                requests │       34 │        0 │
-│            test-scripts │       34 │        0 │
-│      prerequest-scripts │        6 │        0 │
+│                requests │       33 │        0 │
+│            test-scripts │       30 │        0 │
+│      prerequest-scripts │        0 │        0 │
 │              assertions │       72 │        0 │
 ├─────────────────────────┴──────────┴──────────┤
 │ total run duration: ~4s                        │
