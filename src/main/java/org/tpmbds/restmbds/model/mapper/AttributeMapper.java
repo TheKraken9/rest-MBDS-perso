@@ -11,10 +11,6 @@ import java.util.*;
 @Component
 public class AttributeMapper {
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // DTO ↔ Entity
-    // ─────────────────────────────────────────────────────────────────────────
-
     public AttributeEntity toEntity(AttributeRequest request, EntityModelEntity entityModel) {
         AttributeEntity attr = new AttributeEntity();
         attr.setName(request.getName());
@@ -32,14 +28,6 @@ public class AttributeMapper {
                 deserializeConstraints(entity.getConstraintJson())
         );
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Serialisation manuelle : Map<String, Object> ↔ JSON String
-    //
-    // Valeurs supportées : String, Number, Boolean, null,
-    //                      List<String>, List<Number>, List<Boolean>
-    // Pas de dépendance externe — pas d'ObjectMapper.
-    // ─────────────────────────────────────────────────────────────────────────
 
     public String serializeConstraints(Map<String, Object> map) {
         if (map == null || map.isEmpty()) return "{}";
@@ -80,8 +68,6 @@ public class AttributeMapper {
                 .replace("\t", "\\t");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
     public Map<String, Object> deserializeConstraints(String json) {
         if (json == null || json.isBlank()) return Collections.emptyMap();
         String s = json.trim();
@@ -89,8 +75,6 @@ public class AttributeMapper {
         int[] pos = {0};
         return parseObject(s, pos);
     }
-
-    // ── Recursive-descent parser ──────────────────────────────────────────────
 
     private Map<String, Object> parseObject(String s, int[] pos) {
         Map<String, Object> result = new LinkedHashMap<>();
