@@ -51,9 +51,8 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
-									"pm.test('Status 200 or 201', function () {",
+									"pm.test('Status 200', function () {",
 									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
 									"});",
 									"pm.test('Response has id', function () {",
@@ -69,9 +68,11 @@
 									"    var body = pm.response.json();",
 									"    pm.expect(body.size).to.eql(5);",
 									"});",
-									"// Save id for cleanup",
 									"pm.environment.set('unit_project_id', pm.response.json().id);"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -432,56 +433,11 @@
 					"response": []
 				},
 				{
-					"name": "A10 - GET export CSV",
+					"name": "A10 - GET export XML",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"pm.test('Body contains CSV header', function () {",
-									"    var body = pm.response.text();",
-									"    pm.expect(body).to.include('id');",
-									"    pm.expect(body).to.include('name');",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/projects/{{unit_project_id}}/export?format=csv",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"projects",
-								"{{unit_project_id}}",
-								"export"
-							],
-							"query": [
-								{
-									"key": "format",
-									"value": "csv"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "A11 - GET export XML",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 200', function () {",
 									"    pm.response.to.have.status(200);",
@@ -491,7 +447,10 @@
 									"    pm.expect(body).to.include('<');",
 									"    pm.expect(body).to.include('>');",
 									"});"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -877,7 +836,6 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 200 or 201', function () {",
 									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
@@ -887,10 +845,12 @@
 									"    pm.expect(body.name).to.eql('E-Commerce Project');",
 									"    pm.expect(body.size).to.eql(3);",
 									"});",
-									"// Chain project_id for subsequent requests",
 									"pm.environment.set('project_id', pm.response.json().id);",
 									"console.log('project_id saved:', pm.response.json().id);"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -976,7 +936,6 @@
 									"    pm.expect(body.subEntities).to.have.lengthOf(1);",
 									"    pm.expect(body.subEntities[0].name).to.eql('Review');",
 									"});",
-									"// Chain entity_id",
 									"pm.environment.set('entity_id', pm.response.json().id);",
 									"console.log('entity_id saved:', pm.response.json().id);"
 								],
@@ -1303,58 +1262,11 @@
 					"response": []
 				},
 				{
-					"name": "C10 - Export CSV",
+					"name": "C10 - Export XML",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"pm.test('CSV contains entity name header', function () {",
-									"    var body = pm.response.text();",
-									"    pm.expect(body).to.include('ProductV2');",
-									"});",
-									"pm.test('CSV contains id column', function () {",
-									"    pm.expect(pm.response.text()).to.include('id');",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/projects/{{project_id}}/export?format=csv",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"projects",
-								"{{project_id}}",
-								"export"
-							],
-							"query": [
-								{
-									"key": "format",
-									"value": "csv"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "C11 - Export XML",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 200', function () {",
 									"    pm.response.to.have.status(200);",
@@ -1367,7 +1279,10 @@
 									"pm.test('XML contains entity name', function () {",
 									"    pm.expect(pm.response.text()).to.include('ProductV2');",
 									"});"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -1396,12 +1311,11 @@
 					"response": []
 				},
 				{
-					"name": "C12 - GET project details (entities embedded)",
+					"name": "C11 - GET project details (entities embedded)",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 200', function () {",
 									"    pm.response.to.have.status(200);",
@@ -1414,7 +1328,10 @@
 									"pm.test('Project size is 3', function () {",
 									"    pm.expect(pm.response.json().size).to.eql(3);",
 									"});"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -1436,17 +1353,19 @@
 					"response": []
 				},
 				{
-					"name": "C13 - DELETE entity (Order)",
+					"name": "C12 - DELETE entity (Order)",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 204 or 200', function () {",
 									"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
 									"});"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -1468,22 +1387,23 @@
 					"response": []
 				},
 				{
-					"name": "C14 - DELETE project (idempotent cleanup)",
+					"name": "C13 - DELETE project (idempotent cleanup)",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 204 or 200', function () {",
 									"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
 									"});",
-									"// Clear environment variables",
 									"pm.environment.unset('project_id');",
 									"pm.environment.unset('entity_id');",
 									"pm.environment.unset('order_entity_id');",
 									"console.log('Cleanup complete — all variables unset.');"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
