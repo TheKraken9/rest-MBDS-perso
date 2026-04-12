@@ -422,5 +422,5 @@ newman run tests/collection.json \
 ---
 
 
-### Linux (erreur de permission, besoin de sudo) : npm install -g newman newman-reporter-htmlextra
+### Linux (erreur de permission, besoin de sudo) : sudo npm install -g newman newman-reporter-htmlextra
 ### Windows npm install -g newman newman-reporter-htmlextra
