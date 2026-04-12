@@ -283,72 +283,109 @@ Les services dépendent d’abstractions :
 
 ## Modifications apportées à l'architecture initiale
 
-> Cette section explique les changements que nous avons effectués par rapport à la conception initiale, et pourquoi nous les avons faits.
+> Cette section compare l'architecture initiale (UML de conception) avec l'architecture implémentée, et explique chaque changement.
 
 ---
 
-### 1. Interfaces → Classes abstraites
+### 1. `Constraint` : interface → classe abstraite
+
+**Avant :** `<<Interface>> Constraint` avec une seule méthode `isValid(value): boolean`
+
+**Après :** `(abstract) Constraint` avec `isValid()` abstraite + méthode concrète `describe()`
+
+**Pourquoi ?** Une interface ne peut pas fournir de comportement partagé sans `default`, ce qui est moins propre. Dès qu'on a voulu ajouter une méthode commune à toutes les contraintes, la classe abstraite s'est imposée. De plus, une lambda Java ne peut pas étendre une classe abstraite, ce qui nous a obligés à créer `NoConstraint` comme vraie classe.
+
+---
+
+### 2. `Exporter` : interface → classe abstraite (Template Method Pattern)
+
+**Avant :** `<<Interface>> Exporter` avec `export(entityName, data)` — chaque exporteur (CSVExporter, XMLExporter) réimplémentait tout de zéro.
+
+**Après :** `(abstract) Exporter` dont la méthode `export()` définit le squelette de l'algorithme (début du document → bloc par entité → fin du document). Chaque sous-classe ne redéfinit que `appendEntityBlock()`. `JsonExporter` surcharge directement `export()` car sa structure est différente.
+
+**Nouveauté :** `JsonExporter` a été ajouté. L'ancien diagramme n'avait que `CSVExporter` et `XMLExporter`.
+
+**Pourquoi ?** Éviter de dupliquer la boucle principale dans chaque exporteur. C'est le **Template Method Pattern**.
+
+---
+
+### 3. `DataType` (enum) → `FieldType` (classe abstraite) + `FieldTypeRegistry`
+
+C'est le changement le plus profond.
+
+**Avant :** `<<Enum>> DataType` (STRING, INTEGER, FLOAT...) stocké dans `Attribute`. `GeneratorFactory` faisait le lien entre un `DataType` et un `DataGenerator`.
+
+**Après :** `(abstract) FieldType` avec trois méthodes abstraites : `code()`, `getGenerator()`, `createConstraint()`. Chaque type (`IntegerFieldType`, `EmailFieldType`, `EnumFieldType`...) est une classe qui porte à la fois son code, son générateur et sa contrainte. Le `FieldTypeRegistry` (map `code → FieldType`) remplace la `GeneratorFactory`.
+
+**Pourquoi ?** L'enum ne pouvait pas évoluer sans être modifié (violation Open/Closed). Avec des classes, on ajoute un nouveau type en créant une nouvelle classe sans toucher au reste. Le Registry évite les `if/else` dans les services.
+
+---
+
+### 4. `Attribute` : objets Java → codes persistés en base (JPA)
 
 **Avant :**
-```
-interface Constraint   { isValid(value): boolean }
-interface FieldType    { code(); getGenerator(); createConstraint() }
-interface Exporter     { export(...): String }
+```java
+Attribute {
+    DataType dataType;            // enum Java
+    List constraints; // objets Java
+}
 ```
 
 **Après :**
-```
-abstract class Constraint  { abstract isValid(); describe() }
-abstract class FieldType   { abstract code(); abstract getGenerator(); abstract createConstraint() }
-abstract class Exporter    { abstract format(); export() (Template Method) }
-```
-
-**Pourquoi ?**
-
-- `Constraint` : on a ajouté une méthode concrète `describe()` commune à toutes les implémentations. Une interface ne peut pas fournir de comportement partagé de cette façon (sans default, ce qui est moins propre). La classe abstraite est plus adaptée quand toutes les sous-classes partagent du code.
-- `FieldType` : même raison — on voulait pouvoir ajouter de la logique commune aux types de champs sans dupliquer dans chaque implémentation.
-- `Exporter` : on a appliqué le **Template Method Pattern**. La méthode `export()` définit le squelette de l'algorithme (début du document → blocs par entité → fin du document), et chaque sous-classe (`XmlExporter`) redéfinit uniquement `appendEntityBlock()`. `JsonExporter` surcharge directement `export()` car sa structure est différente. Ce pattern évite de répéter la boucle principale dans chaque exporteur.
-
----
-
-### 2. `Attribute` → `AttributeEntity` : du domaine pur vers la persistance JPA
-
-**Avant (domaine conceptuel) :**
 ```java
-class Attribute {
-    String name;
-    FieldType fieldType;      // objet Java
-    Constraint constraint;    // objet Java
+AttributeEntity {
+    String fieldTypeCode;   // ex: "INTEGER", "EMAIL"
+    String constraintJson;  // ex: {"min":18,"max":90}
 }
 ```
 
-**Après (entité JPA persistée en base H2) :**
-```java
-@Entity
-class AttributeEntity {
-    String name;
-    String fieldTypeCode;     // ex: "INTEGER", "ENUM"
-    String constraintJson;    // ex: {"min":18,"max":90}
-}
-```
-
-**Pourquoi ?**
-
-JPA ne peut pas persister des objets polymorphiques (`FieldType`, `Constraint`) sans configuration complexe. On stocke donc un code (chaîne de caractères) et une configuration JSON (sérialisée manuellement). Au moment de la génération, le `FieldTypeRegistry` retrouve le bon objet `FieldType` à partir du code, et `AttributeMapper` désérialise le JSON en `Map<String, Object>`.
+**Pourquoi ?** JPA ne peut pas persister des objets polymorphiques comme `Constraint` ou `FieldType` sans configuration complexe. On stocke donc un code et un JSON. Au moment de la génération, le `FieldTypeRegistry` retrouve le bon `FieldType` depuis le code, et `AttributeMapper` désérialise le JSON manuellement (sans ObjectMapper).
 
 ---
 
-### 3. Support des sous-entités
+### 5. `RandomDataGenerator` / `ApiDataGenerator` → générateurs spécialisés
 
-L'entité `EntityModelEntity` est **auto-référencée** : elle a un champ `parentEntity` et une liste `subEntities`. Cela permet de modéliser des structures imbriquées comme un `Product` contenant plusieurs `Review`.
+**Avant :** Deux générateurs génériques : `RandomDataGenerator` (tout aléatoire) et `ApiDataGenerator` (via API externe).
 
-La génération est **récursive** : `DatasetService` parcourt d'abord les entités racines (`parentEntity == null`), génère leurs lignes, puis pour chaque sous-entité appelle `generateSubRows()` qui s'appelle elle-même récursivement. Le résultat est un tableau imbriqué dans chaque ligne parente.
+**Après :** Chaque type a son propre générateur dédié : `RandomIntegerGenerator`, `RandomStringGenerator`, `EmailGenerator`, `EnumGenerator`, `DateGenerator`, `AutoIncrementGenerator`, `NameGenerator`.
+
+`NameGenerator` concrétise l'idée de l'ancien `ApiDataGenerator` : il appelle l'API **randomuser.me** (`GET /api/?nat=fr`) pour obtenir de vrais noms, avec un fallback local en cas d'échec réseau.
+
+**Pourquoi ?** Un générateur générique ne peut pas gérer les spécificités de chaque type (ex : une date nécessite des bornes `after`/`before`, un entier des bornes `min`/`max`). Chaque générateur connaît exactement le format de sa config.
 
 ---
 
-### 4. Registry Pattern
+### 6. Support des sous-entités (auto-référence JPA)
 
-On utilise un `FieldTypeRegistry` et un `ExporterRegistry` : ce sont des maps (`code → objet`) qui permettent de résoudre dynamiquement le bon type ou exporteur à partir d'une chaîne de caractères. Cela évite les `if/else` ou `switch` et respecte le principe Open/Closed (on ajoute un nouveau type sans toucher au service).
+**Avant :** `Entity` avait déjà `subEntities: List<Entity>` dans le diagramme, mais ce n'était pas implémenté.
+
+**Après :** `EntityModelEntity` est une vraie entité JPA auto-référencée avec `parentEntity` (ManyToOne) et `subEntities` (OneToMany + `orphanRemoval = true`). La génération est récursive : `DatasetService` filtre les entités racines (`parentEntity == null`), génère leurs lignes, puis appelle `generateSubRows()` récursivement pour chaque sous-entité imbriquée.
+
+---
+
+### 7. Couche Mapper manuelle
+
+**Avant :** Absente du diagramme initial.
+
+**Après :** Trois mappers manuels (`ProjectMapper`, `EntityModelMapper`, `AttributeMapper`) assurent la conversion entre entités JPA et DTOs. `AttributeMapper` contient un sérialiseur JSON et un parseur récursif écrits à la main, sans bibliothèque externe.
+
+---
+
+### Tableau récapitulatif
+
+| Concept | Ancien | Nouveau |
+|---|---|---|
+| `Constraint` | Interface | abstract class + `describe()` |
+| `Exporter` | Interface | abstract class + Template Method |
+| `DataType` | Enum dans Attribute | abstract class FieldType + Registry |
+| `Attribute` | tient des objets Java | stocke `fieldTypeCode` + `constraintJson` |
+| Générateurs | `RandomDataGenerator` / `ApiDataGenerator` | 7 générateurs spécialisés dont `NameGenerator` (API) |
+| Export | CSV + XML | CSV + XML + JSON |
+| Sous-entités | prévu, non implémenté | JPA auto-référencé + génération récursive |
+| Mappers | absents | `ProjectMapper`, `EntityModelMapper`, `AttributeMapper` |
+
+
+---
 
 ---
 
