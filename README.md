@@ -399,15 +399,15 @@ Les tests d’API sont automatisés avec **Postman / Newman** et se trouvent dan
 |---|---|
 | `collection.json` | Collection Postman v2.1 — 34 requêtes, 72 assertions |
 | `environment.json` | Environnement Postman (base_url, variables de chaînage) |
-| `report-sample.html` | Rapport Newman HTML pré-généré (exemple de résultat attendu) |
+| `report.html` | Rapport Newman HTML généré |
 
 ### Structure de la collection
 
 | Dossier | Requêtes | Objectif |
-|---|---|---|
-| **A. Unit Tests** | 12 | Smoke tests de chaque endpoint individuellement |
-| **B. Error Cases** | 7 | Validation des codes 400/404 sur les cas d’erreur |
-| **C. Integration Scenario** | 15 | Scénario complet avec chaînage de variables (`project_id`, `entity_id`) |
+|---|----------|---|
+| **A. Unit Tests** | 10       | Smoke tests de chaque endpoint individuellement |
+| **B. Error Cases** | 7        | Validation des codes 400/404 sur les cas d’erreur |
+| **C. Integration Scenario** | 13       | Scénario complet avec chaînage de variables (`project_id`, `entity_id`) |
 
 ### Prérequis
 
@@ -454,7 +454,7 @@ newman run tests/collection.json \
 └────────────────────────────────────────────────┘
 ```
 
-> Le rapport HTML généré (`tests/report.html`) donne la vue détaillée par requête. Un exemple de rapport est disponible dans `tests/report-sample.html`.
+> Le rapport HTML généré (`tests/report.html`) donne la vue détaillée par requête.
 
 ---
 
