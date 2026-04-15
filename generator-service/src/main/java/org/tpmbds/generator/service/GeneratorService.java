@@ -29,9 +29,15 @@ public class GeneratorService {
     public PreviewResponse preview(Long projectId) {
         ProjectDefinitionDto project = managerClient.getProject(projectId);
 
+        // Fallback propre: pas de stacktrace, on renvoie une réponse JSON explicite
+        // (utile quand dataset-manager-service est down ou trop lent).
         if (project == null || project.getEntities() == null || project.getEntities().isEmpty()) {
-            throw new ServiceUnavailableException(
-                    "dataset-manager-service is unavailable or project " + projectId + " not found");
+            PreviewResponse fallback = new PreviewResponse();
+            fallback.setProjectId(projectId);
+            fallback.setData(Collections.emptyMap());
+            fallback.setStatus("PARTIAL");
+            fallback.setMessage("Service de génération momentanément indisponible (dataset-manager-service). Réessayez plus tard.");
+            return fallback;
         }
 
         Map<String, List<Map<String, Object>>> data = new LinkedHashMap<>();
@@ -55,7 +61,12 @@ public class GeneratorService {
             data.put(entity.getName(), rows);
         }
 
-        return new PreviewResponse(projectId, data);
+        PreviewResponse ok = new PreviewResponse();
+        ok.setProjectId(projectId);
+        ok.setData(data);
+        ok.setStatus("OK");
+        ok.setMessage(null);
+        return ok;
     }
 
     private List<Map<String, Object>> generateSubRows(EntityDefinitionDto subEntity,

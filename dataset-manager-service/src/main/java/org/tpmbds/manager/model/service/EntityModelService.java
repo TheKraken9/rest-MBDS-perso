@@ -23,7 +23,7 @@ public class EntityModelService {
 
     private static final Set<String> VALID_TYPES = Set.of(
             "STRING", "INTEGER", "FLOAT", "BOOLEAN", "DATE", "ENUM",
-            "EMAIL", "AUTO_INCREMENT", "NAME"
+            "EMAIL", "AUTOINCREMENT", "NAME"
     );
 
     private final EntityModelRepository entityRepository;

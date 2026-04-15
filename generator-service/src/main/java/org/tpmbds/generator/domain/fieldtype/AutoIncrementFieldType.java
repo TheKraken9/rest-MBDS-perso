@@ -9,7 +9,7 @@ import java.util.Map;
 public class AutoIncrementFieldType extends FieldType {
     private final AutoIncrementGenerator generator;
     public AutoIncrementFieldType(AutoIncrementGenerator g) { this.generator = g; }
-    @Override public String code() { return "AUTO_INCREMENT"; }
+    @Override public String code() { return "AUTOINCREMENT"; }
     @Override public DataGenerator getGenerator() { return generator; }
     @Override public Constraint createConstraint(Map<String, Object> config) { return new NoConstraint(); }
 }

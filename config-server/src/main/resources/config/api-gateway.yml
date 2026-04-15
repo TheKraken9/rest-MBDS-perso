@@ -1,6 +1,29 @@
 server:
   port: 8080
 
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            - id: dataset-manager-projects
+              uri: lb://dataset-manager-service
+              predicates:
+                - Path=/api/projects,/api/projects/**
+            - id: dataset-manager-entities
+              uri: lb://dataset-manager-service
+              predicates:
+                - Path=/api/entities,/api/entities/**
+            - id: generator
+              uri: lb://generator-service
+              predicates:
+                - Path=/api/generator,/api/generator/**
+
 eureka:
   client:
     service-url:

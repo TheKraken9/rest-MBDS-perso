@@ -1,6 +1,8 @@
 dependencies {
     // Gateway est REACTIVE (WebFlux) — ne pas ajouter spring-boot-starter-web
-    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    // Spring Cloud 2025.x: utiliser le starter explicite "gateway-server-webflux"
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
+
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

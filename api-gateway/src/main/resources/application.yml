@@ -8,22 +8,25 @@ spring:
     import: optional:configserver:http://localhost:8888
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      routes:
-        # Projets et entités → dataset-manager-service
-        - id: dataset-manager-projects
-          uri: lb://dataset-manager-service
-          predicates:
-            - Path=/api/projects/**
-        - id: dataset-manager-entities
-          uri: lb://dataset-manager-service
-          predicates:
-            - Path=/api/entities/**
-        # Génération → generator-service
-        - id: generator
-          uri: lb://generator-service
-          predicates:
-            - Path=/api/generator/**
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            # Projets et entités → dataset-manager-service
+            # NB: "/api/projects/**" ne matche pas "/api/projects" (sans slash final), donc on met les deux.
+            - id: dataset-manager-projects
+              uri: lb://dataset-manager-service
+              predicates:
+                - Path=/api/projects,/api/projects/**
+            - id: dataset-manager-entities
+              uri: lb://dataset-manager-service
+              predicates:
+                - Path=/api/entities,/api/entities/**
+            # Génération → generator-service
+            - id: generator
+              uri: lb://generator-service
+              predicates:
+                - Path=/api/generator,/api/generator/**
