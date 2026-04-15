@@ -1,3 +1,6 @@
+server:
+  port: 8080   # fallback si config-server indisponible
+
 spring:
   application:
     name: api-gateway

@@ -16,15 +16,15 @@ eureka:
 
 resilience4j:
   circuitbreaker:
-    instances:
-      dataset-manager:
+    configs:
+      default:                               # s'applique à tous les CB Feign auto-générés
         sliding-window-size: 5
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
   timelimiter:
-    instances:
-      dataset-manager:
+    configs:
+      default:
         timeout-duration: 3s
 
 feign:
