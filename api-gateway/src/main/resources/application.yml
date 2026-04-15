@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: optional:configserver:http://localhost:8888
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # Projets et entités → dataset-manager-service
+        - id: dataset-manager-projects
+          uri: lb://dataset-manager-service
+          predicates:
+            - Path=/api/projects/**
+        - id: dataset-manager-entities
+          uri: lb://dataset-manager-service
+          predicates:
+            - Path=/api/entities/**
+        # Génération → generator-service
+        - id: generator
+          uri: lb://generator-service
+          predicates:
+            - Path=/api/generator/**
