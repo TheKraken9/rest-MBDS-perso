@@ -4,7 +4,142 @@
 
 ---
 
-# Dataset Generator
+# Dataset Generator — Phase 4 : Architecture Microservices
+
+## Lancement rapide
+
+```bash
+./run.sh
+```
+
+Cette commande :
+1. Compile les JARs de chaque module avec Gradle (`bootJar`)
+2. Lance tous les conteneurs Docker dans l'ordre correct (`docker compose up --build`)
+
+### Prérequis
+- Java 25 (`openjdk-25-jdk-headless`)
+- Docker + Docker Compose
+- Gradle Wrapper inclus (`./gradlew`)
+
+---
+
+## Architecture microservices
+
+```
+                        ┌──────────────────┐
+                        │   Eureka Server  │ :8761
+                        │  (service registry)│
+                        └────────┬─────────┘
+                                 │  (tous s'enregistrent)
+          ┌──────────────────────┼──────────────────────┐
+          │                      │                      │
+┌─────────▼────────┐   ┌─────────▼────────┐   ┌────────▼─────────┐
+│  Config Server   │   │dataset-manager   │   │generator-service │
+│   :8888          │   │   :8081          │   │   :8082          │
+│  (configs YAML)  │   │  (JPA + H2)      │   │  (génération)    │
+└──────────────────┘   └──────────────────┘   └──────────────────┘
+                                 ▲                      │ Feign
+                                 └──────────────────────┘
+                        ┌──────────────────┐
+                        │   API Gateway    │ :8080
+                        │  (point d'entrée)│
+                        └──────────────────┘
+```
+
+### Services
+
+| Service | Port | Rôle |
+|---|---|---|
+| `eureka-server` | 8761 | Registre de services (discovery) |
+| `config-server` | 8888 | Configuration centralisée (Spring Cloud Config) |
+| `dataset-manager-service` | 8081 | Gestion des projets et entités (REST + JPA/H2) |
+| `generator-service` | 8082 | Génération et export de données |
+| `api-gateway` | 8080 | Point d'entrée unique (Spring Cloud Gateway) |
+
+---
+
+## Endpoints (via API Gateway :8080)
+
+### Projets
+```
+POST   /api/projects              Créer un projet
+GET    /api/projects              Lister tous les projets
+GET    /api/projects/{id}         Récupérer un projet
+DELETE /api/projects/{id}         Supprimer un projet
+```
+
+### Entités
+```
+POST   /api/entities/project/{id}  Ajouter une entité à un projet
+GET    /api/entities/project/{id}  Lister les entités d'un projet
+DELETE /api/entities/{id}          Supprimer une entité
+```
+
+### Génération
+```
+GET    /api/generator/{projectId}/preview             Prévisualiser (5 lignes)
+GET    /api/generator/{projectId}/export?format=json  Exporter en JSON
+GET    /api/generator/{projectId}/export?format=csv   Exporter en CSV
+GET    /api/generator/{projectId}/export?format=json&count=50  Avec comptage
+```
+
+### Exemple de body pour créer une entité
+```json
+{
+  "name": "User",
+  "fields": [
+    { "name": "firstName", "type": "FIRST_NAME" },
+    { "name": "lastName",  "type": "LAST_NAME" },
+    { "name": "email",     "type": "EMAIL" },
+    { "name": "age",       "type": "INTEGER" },
+    { "name": "city",      "type": "CITY" }
+  ]
+}
+```
+
+Types disponibles : `FIRST_NAME`, `LAST_NAME`, `EMAIL`, `INTEGER`, `FLOAT`, `BOOLEAN`, `DATE`, `CITY`, `COUNTRY`, `PHONE`, `UUID`
+
+---
+
+## Circuit Breaker (Resilience4J)
+
+Le `generator-service` appelle le `dataset-manager-service` via **Feign** avec un **Circuit Breaker** :
+
+- **Instance** : `dataset-manager`
+- **Fenêtre** : 5 appels
+- **Seuil d'ouverture** : 50% d'échecs
+- **Durée ouverte** : 10 secondes
+- **Half-open** : 2 appels de test
+
+### Tester le circuit breaker
+
+```bash
+# Simuler une panne du dataset-manager-service
+docker compose stop dataset-manager-service
+
+# Appeler le generator → 503 avec message explicite
+GET http://localhost:8080/api/generator/1/preview
+
+# Rétablir le service
+docker compose start dataset-manager-service
+```
+
+---
+
+## Tableau de bord Eureka
+
+Accessible à : http://localhost:8761
+
+Vérifie que les 3 services sont enregistrés :
+- `DATASET-MANAGER-SERVICE`
+- `GENERATOR-SERVICE`
+- `API-GATEWAY`
+
+---
+
+# Dataset Generator — Phases 1-3 : Monolithe
+
+
 
 ## Description du projet
 
