@@ -1,5 +1,7 @@
 package org.tpmbds.generator.service;
 
+import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.stereotype.Service;
 import org.tpmbds.generator.domain.constraint.Constraint;
 import org.tpmbds.generator.domain.fieldtype.FieldType;
@@ -8,7 +10,6 @@ import org.tpmbds.generator.dto.EntityDefinitionDto;
 import org.tpmbds.generator.dto.FieldDefinitionDto;
 import org.tpmbds.generator.dto.PreviewResponse;
 import org.tpmbds.generator.dto.ProjectDefinitionDto;
-import org.tpmbds.generator.exception.ServiceUnavailableException;
 import org.tpmbds.generator.feign.DatasetManagerClient;
 
 import java.util.*;
@@ -26,19 +27,15 @@ public class GeneratorService {
         this.registry = registry;
     }
 
+    /**
+     * Le @CircuitBreaker est ici (couche service, pas sur l'interface Feign) car :
+     * - Spring AOP proxy CGLIB sur une classe concrète = interception garantie
+     * - Sur une interface Feign, le conflit avec feign.circuitbreaker interne
+     *   fait que le fallback n'est jamais appelé.
+     */
+    @CircuitBreaker(name = "dataset-manager", fallbackMethod = "previewFallback")
     public PreviewResponse preview(Long projectId) {
         ProjectDefinitionDto project = managerClient.getProject(projectId);
-
-        // Fallback propre: pas de stacktrace, on renvoie une réponse JSON explicite
-        // (utile quand dataset-manager-service est down ou trop lent).
-        if (project == null || project.getEntities() == null || project.getEntities().isEmpty()) {
-            PreviewResponse fallback = new PreviewResponse();
-            fallback.setProjectId(projectId);
-            fallback.setData(Collections.emptyMap());
-            fallback.setStatus("PARTIAL");
-            fallback.setMessage("Service de génération momentanément indisponible (dataset-manager-service). Réessayez plus tard.");
-            return fallback;
-        }
 
         Map<String, List<Map<String, Object>>> data = new LinkedHashMap<>();
 
@@ -113,6 +110,19 @@ public class GeneratorService {
         }
 
         return row;
+    }
+
+    /**
+     * Fallback du circuit breaker "dataset-manager".
+     * Distingue deux cas :
+     *  - 404 NotFound → le projet n'existe pas (erreur métier, pas une panne)
+     *  - tout autre exception → dataset-manager-service réellement indisponible
+     */
+    PreviewResponse previewFallback(Long projectId, Exception e) {
+        String message = (e instanceof FeignException.NotFound)
+                ? "Projet " + projectId + " introuvable dans dataset-manager-service."
+                : "dataset-manager-service momentanément indisponible. Réessayez plus tard.";
+        return new PreviewResponse(projectId, Collections.emptyMap(), "PARTIAL", message);
     }
 
     private int resolveSize(EntityDefinitionDto entity, ProjectDefinitionDto project) {
