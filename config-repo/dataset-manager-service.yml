@@ -1,8 +1,7 @@
+server:
+  port: 8081
+
 spring:
-  application:
-    name: dataset-manager-service
-  config:
-    import: optional:configserver:${CONFIG_SERVICE_URL:http://localhost:8888}
   datasource:
     url: jdbc:h2:mem:managerdb
     driver-class-name: org.h2.Driver
@@ -18,18 +17,9 @@ spring:
       ddl-auto: update
     show-sql: false
 
-server:
-  port: 8081
-
 eureka:
   client:
     service-url:
       defaultZone: ${DISCOVERY_SERVICE_URL:http://localhost:8761/eureka}
   instance:
     prefer-ip-address: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,refresh

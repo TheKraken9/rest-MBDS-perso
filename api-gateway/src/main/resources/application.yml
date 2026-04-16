@@ -1,11 +1,11 @@
 server:
-  port: 8080   # fallback si config-server indisponible
+  port: 8080
 
 spring:
   application:
     name: api-gateway
   config:
-    import: optional:configserver:http://localhost:8888
+    import: optional:configserver:${CONFIG_SERVICE_URL:http://localhost:8888}
   cloud:
     gateway:
       server:
@@ -30,3 +30,10 @@ spring:
               uri: lb://generator-service
               predicates:
                 - Path=/api/generator,/api/generator/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${DISCOVERY_SERVICE_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
