@@ -11,7 +11,8 @@ import org.tpmbds.generator.dto.ProjectDefinitionDto;
  *
  * Circuit Breaker Resilience4J (instance "dataset-manager") :
  * - après 50% d'échecs sur 5 appels, le circuit s'ouvre pendant 10s
- * - getProjectFallback() est appelé → GeneratorService retourne une 503 propre à l'utilisateur
+ * - getProjectFallback() retourne null → GeneratorService retourne une réponse PARTIAL (200 OK)
+ *   au lieu de propager l'erreur : dégradation gracieuse, l'application reste disponible.
  */
 @FeignClient(name = "dataset-manager-service")
 public interface DatasetManagerClient {

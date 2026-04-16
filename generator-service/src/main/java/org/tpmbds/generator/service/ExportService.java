@@ -20,7 +20,22 @@ public class ExportService {
         if (exporter == null) {
             throw new BadRequestException("Unsupported export format: '" + format + "'");
         }
-        var data = generatorService.preview(projectId).getData();
-        return exporter.export(data);
+        var preview = generatorService.preview(projectId);
+        if ("PARTIAL".equals(preview.getStatus())) {
+            return buildFallbackExport(format, projectId, preview.getMessage());
+        }
+        return exporter.export(preview.getData());
+    }
+
+    /**
+     * Retourne un message de fallback dans le format demandé quand dataset-manager-service
+     * est indisponible (circuit breaker ouvert).
+     */
+    private String buildFallbackExport(String format, Long projectId, String message) {
+        return switch (format) {
+            case "csv" -> "status,projectId,message\nPARTIAL," + projectId + ",\"" + message + "\"\n";
+            default    -> "{\n  \"status\": \"PARTIAL\",\n  \"projectId\": " + projectId
+                          + ",\n  \"message\": \"" + message + "\"\n}";
+        };
     }
 }
