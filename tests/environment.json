@@ -9,6 +9,18 @@
       "enabled": true
     },
     {
+      "key": "project_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "entity_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
       "key": "unit_project_id",
       "value": "",
       "type": "default",
@@ -16,6 +28,12 @@
     },
     {
       "key": "unit_entity_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "order_entity_id",
       "value": "",
       "type": "default",
       "enabled": true
