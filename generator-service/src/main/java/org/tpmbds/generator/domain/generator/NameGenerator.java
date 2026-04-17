@@ -20,9 +20,13 @@ import java.util.Random;
 public class NameGenerator implements DataGenerator {
 
     private static final String API_URL = "https://randomuser.me/api/?nat=%s&results=1";
-    private static final Duration TIMEOUT = Duration.ofSeconds(3);
+    private static final Duration TIMEOUT = Duration.ofMillis(500);
+    private static final long RETRY_COOLDOWN_MS = 60_000;
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+
+    private volatile boolean apiAvailable = true;
+    private volatile long lastFailTime = 0;
 
     private static final List<String> FR_FIRST = List.of(
             "Lucas","Emma","Louis","Jade","Gabriel","Chloé","Léo","Manon",
@@ -57,6 +61,9 @@ public class NameGenerator implements DataGenerator {
     }
 
     private String[] fetchFromApi(String language) {
+        if (!apiAvailable && (System.currentTimeMillis() - lastFailTime) < RETRY_COOLDOWN_MS) {
+            return localFallback(language);
+        }
         try {
             String nat = "en".equalsIgnoreCase(language) ? "us" : "fr";
             HttpRequest request = HttpRequest.newBuilder()
@@ -65,8 +72,11 @@ public class NameGenerator implements DataGenerator {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             String first = capitalize(extractJsonValue(response.body(), "first"));
             String last  = capitalize(extractJsonValue(response.body(), "last"));
+            apiAvailable = true;
             return new String[]{ first, last };
         } catch (Exception e) {
+            apiAvailable = false;
+            lastFailTime = System.currentTimeMillis();
             return localFallback(language);
         }
     }

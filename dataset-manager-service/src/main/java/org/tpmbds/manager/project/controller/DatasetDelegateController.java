@@ -35,7 +35,10 @@ public class DatasetDelegateController {
             if (e.status() >= 400 && e.status() < 500) {
                 return ResponseEntity.status(e.status()).build();
             }
-            // 5xx ou connexion refusée → generator-service down → fallback PARTIAL
+            return ResponseEntity.ok(new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
+                    "generator-service momentanément indisponible. Réessayez plus tard."));
+        } catch (Exception e) {
+            // Load balancer / discovery exception (service not registered in Eureka)
             return ResponseEntity.ok(new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
                     "generator-service momentanément indisponible. Réessayez plus tard."));
         }
@@ -57,10 +60,14 @@ public class DatasetDelegateController {
                     .body(content);
         } catch (FeignException e) {
             if (e.status() >= 400 && e.status() < 500) {
-                // 400 = format invalide, 404 = projet introuvable → propager
                 return ResponseEntity.status(e.status()).build();
             }
-            // 5xx ou connexion → fallback PARTIAL
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"status\":\"PARTIAL\",\"projectId\":" + id
+                          + ",\"message\":\"generator-service momentanément indisponible.\"}");
+        } catch (Exception e) {
+            // Load balancer / discovery exception (service not registered in Eureka)
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"status\":\"PARTIAL\",\"projectId\":" + id
