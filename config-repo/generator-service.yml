@@ -14,9 +14,12 @@ resilience4j:
       dataset-manager:
         sliding-window-size: 5
         failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
+        wait-duration-in-open-state: 30s
         permitted-number-of-calls-in-half-open-state: 2
   timelimiter:
     instances:
       dataset-manager:
-        timeout-duration: 3s
+        # 3s was too aggressive for preview/export flows that call remote APIs.
+        # Keep this slightly below the API-Gateway response-timeout (30s) to fail upstream first.
+        timeout-duration: 25s
+        cancel-running-future: true
