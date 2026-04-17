@@ -30,7 +30,11 @@ public class DatasetDelegateController {
     public ResponseEntity<PreviewResponse> preview(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(generatorClient.preview(id));
+        } catch (FeignException.NotFound e) {
+            // Le generator a renvoyé 404 (projet inexistant) → propager en 404
+            return ResponseEntity.notFound().build();
         } catch (FeignException e) {
+            // generator-service réellement indisponible → fallback PARTIAL
             PreviewResponse fallback = new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
                     "generator-service momentanément indisponible. Réessayez plus tard.");
             return ResponseEntity.ok(fallback);
@@ -51,6 +55,8 @@ public class DatasetDelegateController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=dataset." + format)
                     .contentType(mediaType)
                     .body(content);
+        } catch (FeignException.NotFound e) {
+            return ResponseEntity.notFound().build();
         } catch (FeignException e) {
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)

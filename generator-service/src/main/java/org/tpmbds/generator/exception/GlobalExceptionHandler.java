@@ -1,5 +1,6 @@
 package org.tpmbds.generator.exception;
 
+import feign.FeignException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiErrorResponse(
                 LocalDateTime.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
                 "Service Unavailable", ex.getMessage(), request.getRequestURI()));
+    }
+
+    // 404 de dataset-manager-service (projet inexistant) → propager en 404
+    @ExceptionHandler(FeignException.NotFound.class)
+    public ResponseEntity<ApiErrorResponse> handleFeignNotFound(FeignException.NotFound ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiErrorResponse(
+                LocalDateTime.now(), HttpStatus.NOT_FOUND.value(),
+                "Not Found", "Project not found", request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

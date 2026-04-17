@@ -1,6 +1,5 @@
 package org.tpmbds.generator.service;
 
-import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.stereotype.Service;
 import org.tpmbds.generator.domain.constraint.Constraint;
@@ -112,17 +111,11 @@ public class GeneratorService {
         return row;
     }
 
-    /**
-     * Fallback du circuit breaker "dataset-manager".
-     * Distingue deux cas :
-     *  - 404 NotFound → le projet n'existe pas (erreur métier, pas une panne)
-     *  - tout autre exception → dataset-manager-service réellement indisponible
-     */
+    // Appelé uniquement pour pannes réelles (5xx, timeout, connexion refusée).
+    // Les 404 sont ignorés par le CB via ignore-exceptions → propagés via GlobalExceptionHandler.
     PreviewResponse previewFallback(Long projectId, Exception e) {
-        String message = (e instanceof FeignException.NotFound)
-                ? "Projet " + projectId + " introuvable dans dataset-manager-service."
-                : "dataset-manager-service momentanément indisponible. Réessayez plus tard.";
-        return new PreviewResponse(projectId, Collections.emptyMap(), "PARTIAL", message);
+        return new PreviewResponse(projectId, Collections.emptyMap(), "PARTIAL",
+                "dataset-manager-service momentanément indisponible. Réessayez plus tard.");
     }
 
     private int resolveSize(EntityDefinitionDto entity, ProjectDefinitionDto project) {

@@ -10,26 +10,64 @@ spring:
     gateway:
       server:
         webflux:
+          # Timeout courts pour ne pas attendre 30s si un service est down
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 5s
           discovery:
             locator:
               enabled: true
               lower-case-service-id: true
           routes:
             # Projets et entités → dataset-manager-service
-            # NB: "/api/projects/**" ne matche pas "/api/projects" (sans slash final), donc on met les deux.
             - id: dataset-manager-projects
               uri: lb://dataset-manager-service
               predicates:
                 - Path=/api/projects,/api/projects/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: dataset-manager-gw
+                    fallbackUri: forward:/fallback/dataset-manager
             - id: dataset-manager-entities
               uri: lb://dataset-manager-service
               predicates:
                 - Path=/api/entities,/api/entities/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: dataset-manager-gw
+                    fallbackUri: forward:/fallback/dataset-manager
             # Génération → generator-service
             - id: generator
               uri: lb://generator-service
               predicates:
                 - Path=/api/generator,/api/generator/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: generator-gw
+                    fallbackUri: forward:/fallback/generator
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      dataset-manager-gw:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+      generator-gw:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+  timelimiter:
+    instances:
+      dataset-manager-gw:
+        timeout-duration: 4s
+      generator-gw:
+        timeout-duration: 4s
 
 eureka:
   client:
