@@ -14,6 +14,7 @@ eureka:
   instance:
     prefer-ip-address: true
 
+# Fallback si le config-server est indisponible (identique à config-repo/generator-service.yml)
 resilience4j:
   circuitbreaker:
     instances:
@@ -22,10 +23,12 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
-  timelimiter:
-    instances:
-      dataset-manager:
-        timeout-duration: 3s
+        ignore-exceptions:
+          - feign.FeignException$NotFound
+
+feign:
+  circuitbreaker:
+    enabled: false
 
 management:
   endpoints:

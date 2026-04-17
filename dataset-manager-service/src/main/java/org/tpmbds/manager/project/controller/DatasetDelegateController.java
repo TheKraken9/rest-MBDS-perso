@@ -31,14 +31,15 @@ public class DatasetDelegateController {
     public ResponseEntity<PreviewResponse> preview(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(generatorClient.preview(id));
+        } catch (FeignException.FeignClientException e) {
+            // 4xx → erreur métier (ex: 404 projet inconnu) → propager
+            return ResponseEntity.status(e.status()).build();
         } catch (FeignException e) {
-            if (e.status() >= 400 && e.status() < 500) {
-                return ResponseEntity.status(e.status()).build();
-            }
+            // 5xx → panne generator → fallback PARTIAL
             return ResponseEntity.ok(new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
                     "generator-service momentanément indisponible. Réessayez plus tard."));
         } catch (Exception e) {
-            // Load balancer / discovery exception (service not registered in Eureka)
+            // Pas d'instance dans Eureka (load balancer) → fallback PARTIAL
             return ResponseEntity.ok(new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
                     "generator-service momentanément indisponible. Réessayez plus tard."));
         }
@@ -58,16 +59,17 @@ public class DatasetDelegateController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=dataset." + format)
                     .contentType(mediaType)
                     .body(content);
+        } catch (FeignException.FeignClientException e) {
+            // 400 = format invalide, 404 = projet inconnu → propager
+            return ResponseEntity.status(e.status()).build();
         } catch (FeignException e) {
-            if (e.status() >= 400 && e.status() < 500) {
-                return ResponseEntity.status(e.status()).build();
-            }
+            // 5xx → panne generator → fallback PARTIAL
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"status\":\"PARTIAL\",\"projectId\":" + id
                           + ",\"message\":\"generator-service momentanément indisponible.\"}");
         } catch (Exception e) {
-            // Load balancer / discovery exception (service not registered in Eureka)
+            // Pas d'instance dans Eureka (load balancer) → fallback PARTIAL
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"status\":\"PARTIAL\",\"projectId\":" + id
