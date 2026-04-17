@@ -10,16 +10,16 @@ spring:
     gateway:
       server:
         webflux:
-          # Timeout courts pour ne pas attendre 30s si un service est down
           httpclient:
+            # Fail-fast si le service est DOWN (connexion refusée = 2s max)
             connect-timeout: 2000
-            response-timeout: 5s
+            # Laisser le temps aux services de répondre (JVM warmup = lent au démarrage)
+            response-timeout: 30s
           discovery:
             locator:
               enabled: true
               lower-case-service-id: true
           routes:
-            # Projets et entités → dataset-manager-service
             - id: dataset-manager-projects
               uri: lb://dataset-manager-service
               predicates:
@@ -38,7 +38,6 @@ spring:
                   args:
                     name: dataset-manager-gw
                     fallbackUri: forward:/fallback/dataset-manager
-            # Génération → generator-service
             - id: generator
               uri: lb://generator-service
               predicates:
@@ -62,12 +61,9 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
-  timelimiter:
-    instances:
-      dataset-manager-gw:
-        timeout-duration: 4s
-      generator-gw:
-        timeout-duration: 4s
+  # Pas de timelimiter : en WebFlux réactif, les timeouts HTTP (connect/response)
+  # suffisent. Un timelimiter court déclenche de faux positifs sur les premiers
+  # appels à froid (JVM warmup).
 
 eureka:
   client:
