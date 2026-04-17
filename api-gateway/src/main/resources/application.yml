@@ -52,15 +52,17 @@ resilience4j:
   circuitbreaker:
     instances:
       dataset-manager-gw:
-        sliding-window-size: 5
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 2
+        sliding-window-size: 20
+        minimum-number-of-calls: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
       generator-gw:
-        sliding-window-size: 5
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 2
+        sliding-window-size: 20
+        minimum-number-of-calls: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
   # Pas de timelimiter : en WebFlux réactif, les timeouts HTTP (connect/response)
   # suffisent. Un timelimiter court déclenche de faux positifs sur les premiers
   # appels à froid (JVM warmup).
