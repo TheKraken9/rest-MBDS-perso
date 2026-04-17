@@ -11,10 +11,11 @@ import org.tpmbds.manager.feign.dto.PreviewResponse;
 import java.util.Collections;
 
 /**
- * Façade de rétrocompatibilité : les anciens endpoints /api/projects/{id}/preview
- * et /api/projects/{id}/export sont conservés mais délèguent au generator-service
- * via Feign.
- * Si generator-service est indisponible, retourne une réponse PARTIAL (200 OK).
+ * Façade : délègue preview/export au generator-service.
+ *
+ * Règle de gestion des erreurs Feign :
+ *   4xx → erreur métier du client → propager telle quelle
+ *   5xx ou connexion → generator-service down → fallback PARTIAL (200)
  */
 @RestController
 @RequestMapping("/api/projects")
@@ -30,14 +31,13 @@ public class DatasetDelegateController {
     public ResponseEntity<PreviewResponse> preview(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(generatorClient.preview(id));
-        } catch (FeignException.NotFound e) {
-            // Le generator a renvoyé 404 (projet inexistant) → propager en 404
-            return ResponseEntity.notFound().build();
         } catch (FeignException e) {
-            // generator-service réellement indisponible → fallback PARTIAL
-            PreviewResponse fallback = new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
-                    "generator-service momentanément indisponible. Réessayez plus tard.");
-            return ResponseEntity.ok(fallback);
+            if (e.status() >= 400 && e.status() < 500) {
+                return ResponseEntity.status(e.status()).build();
+            }
+            // 5xx ou connexion refusée → generator-service down → fallback PARTIAL
+            return ResponseEntity.ok(new PreviewResponse(id, Collections.emptyMap(), "PARTIAL",
+                    "generator-service momentanément indisponible. Réessayez plus tard."));
         }
     }
 
@@ -55,9 +55,12 @@ public class DatasetDelegateController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=dataset." + format)
                     .contentType(mediaType)
                     .body(content);
-        } catch (FeignException.NotFound e) {
-            return ResponseEntity.notFound().build();
         } catch (FeignException e) {
+            if (e.status() >= 400 && e.status() < 500) {
+                // 400 = format invalide, 404 = projet introuvable → propager
+                return ResponseEntity.status(e.status()).build();
+            }
+            // 5xx ou connexion → fallback PARTIAL
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"status\":\"PARTIAL\",\"projectId\":" + id
@@ -65,3 +68,4 @@ public class DatasetDelegateController {
         }
     }
 }
+
