@@ -47,6 +47,8 @@ public class EntityModelService {
 
     @Transactional(readOnly = true)
     public List<EntityResponse> list(Long projectId) {
+        if (!projectRepository.existsById(projectId))
+            throw new ResourceNotFoundException("Project not found: " + projectId);
         return entityRepository.findByProjectIdAndParentEntityIsNull(projectId).stream()
                 .map(entityModelMapper::toResponse).toList();
     }
