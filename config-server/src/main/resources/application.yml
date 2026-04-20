@@ -10,8 +10,6 @@ spring:
     config:
       server:
         native:
-          # file:/config-repo/ = volume Docker monté à la racine du projet
-          # classpath:/config/ = fallback pour dev local (IntelliJ)
           search-locations: file:/config-repo/,classpath:/config/
 
 eureka:

@@ -11,9 +11,7 @@ spring:
       server:
         webflux:
           httpclient:
-            # Fail-fast si le service est DOWN (connexion refusée = 2s max)
             connect-timeout: 2000
-            # Laisser le temps aux services de répondre (JVM warmup = lent au démarrage)
             response-timeout: 30s
           discovery:
             locator:
@@ -63,9 +61,6 @@ resilience4j:
         failure-rate-threshold: 80
         wait-duration-in-open-state: 5s
         permitted-number-of-calls-in-half-open-state: 3
-  # Pas de timelimiter : en WebFlux réactif, les timeouts HTTP (connect/response)
-  # suffisent. Un timelimiter court déclenche de faux positifs sur les premiers
-  # appels à froid (JVM warmup).
 
 eureka:
   client:

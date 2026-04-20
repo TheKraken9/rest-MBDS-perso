@@ -16,11 +16,9 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
-        # 404 = projet inexistant (erreur métier, pas une panne) → ne compte pas comme échec CB
         ignore-exceptions:
           - feign.FeignException$NotFound
 
-# Désactive le CB interne de Feign : on gère le CB au niveau @CircuitBreaker dans GeneratorService
 feign:
   circuitbreaker:
     enabled: false
