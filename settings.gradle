@@ -1,1 +1,14 @@
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'rest-MBDS'
+
+include 'eureka-server'
+include 'config-server'
+include 'api-gateway'
+include 'dataset-manager-service'
+include 'generator-service'
