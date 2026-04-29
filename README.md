@@ -1,56 +1,12 @@
-# Equipes
-## -ANDRIANIAINA LIANTSOA FEHIZORO
-## -ANDRIANAMBININA FENITRA TOKINIAINA
-
 ---
 
-# Dataset Generator — Phase 4 : Architecture Microservices
+## Phase 4 : Architecture Microservices
 
-## Lancement rapide
+### Nouveaux modules ajoutés
 
-```bash
-./run.sh
-```
-
-Cette commande :
-1. Compile les JARs de chaque module avec Gradle (`bootJar`)
-2. Lance tous les conteneurs Docker dans l'ordre correct (`docker compose up --build`)
-
-### Prérequis
-- Java 25 (`openjdk-25-jdk-headless`)
-- Docker + Docker Compose
-- Gradle Wrapper inclus (`./gradlew`)
-
----
-
-## Architecture microservices
-
-```
-                        ┌──────────────────┐
-                        │   Eureka Server  │ :8761
-                        │  (service registry)│
-                        └────────┬─────────┘
-                                 │  (tous s'enregistrent)
-          ┌──────────────────────┼──────────────────────┐
-          │                      │                      │
-┌─────────▼────────┐   ┌─────────▼────────┐   ┌────────▼─────────┐
-│  Config Server   │   │dataset-manager   │   │generator-service │
-│   :8888          │   │   :8081          │   │   :8082          │
-│  (configs YAML)  │   │  (JPA + H2)      │   │  (génération)    │
-└──────────────────┘   └──────────────────┘   └──────────────────┘
-                                 ▲                      │ Feign
-                                 └──────────────────────┘
-                        ┌──────────────────┐
-                        │   API Gateway    │ :8080
-                        │  (point d'entrée)│
-                        └──────────────────┘
-```
-
-### Services
-
-| Service | Port | Rôle |
+| Module | Port | Rôle |
 |---|---|---|
-| `eureka-server` | 8761 | Registre de services (discovery) |
+| `eureka-server` | 8761 | Registre de services (Spring Cloud Netflix Eureka) |
 | `config-server` | 8888 | Configuration centralisée (Spring Cloud Config) |
 | `dataset-manager-service` | 8081 | Gestion des projets et entités (REST + JPA/H2) |
 | `generator-service` | 8082 | Génération et export de données |
@@ -58,359 +14,95 @@ Cette commande :
 
 ---
 
-## Endpoints (via API Gateway :8080)
+### Schéma de l'architecture
 
-### Projets
 ```
-POST   /api/projects              Créer un projet
-GET    /api/projects              Lister tous les projets
-GET    /api/projects/{id}         Récupérer un projet
-DELETE /api/projects/{id}         Supprimer un projet
-```
+Client
+  │
+  ▼
+API Gateway (:8080)          ← point d'entrée unique
+  ├─→ dataset-manager-service (:8081)   ← projets & entités
+  └─→ generator-service (:8082)         ← génération
 
-### Entités
-```
-POST   /api/entities/project/{id}  Ajouter une entité à un projet
-GET    /api/entities/project/{id}  Lister les entités d'un projet
-DELETE /api/entities/{id}          Supprimer une entité
-```
+Eureka Server (:8761)        ← tous les services s'y enregistrent
+Config Server (:8888)        ← distribue les fichiers YAML de config
 
-### Génération
+generator-service ──Feign──→ dataset-manager-service
+                              (récupère la définition du projet pour générer)
 ```
-GET    /api/generator/{projectId}/preview             Prévisualiser (5 lignes)
-GET    /api/generator/{projectId}/export?format=json  Exporter en JSON
-GET    /api/generator/{projectId}/export?format=csv   Exporter en CSV
-GET    /api/generator/{projectId}/export?format=json&count=50  Avec comptage
-```
-
-### Exemple de body pour créer une entité
-```json
-{
-  "name": "User",
-  "fields": [
-    { "name": "firstName", "type": "FIRST_NAME" },
-    { "name": "lastName",  "type": "LAST_NAME" },
-    { "name": "email",     "type": "EMAIL" },
-    { "name": "age",       "type": "INTEGER" },
-    { "name": "city",      "type": "CITY" }
-  ]
-}
-```
-
-Types disponibles : `FIRST_NAME`, `LAST_NAME`, `EMAIL`, `INTEGER`, `FLOAT`, `BOOLEAN`, `DATE`, `CITY`, `COUNTRY`, `PHONE`, `UUID`
 
 ---
 
-## Circuit Breaker (Resilience4J)
-
-Le `generator-service` appelle le `dataset-manager-service` via **Feign** avec un **Circuit Breaker** :
-
-- **Instance** : `dataset-manager`
-- **Fenêtre** : 5 appels
-- **Seuil d'ouverture** : 50% d'échecs
-- **Durée ouverte** : 10 secondes
-- **Half-open** : 2 appels de test
-
-### Tester le circuit breaker
+### Lancement
 
 ```bash
-# Simuler une panne du dataset-manager-service
-docker compose stop dataset-manager-service
-
-# Appeler le generator → 503 avec message explicite
-GET http://localhost:8080/api/generator/1/preview
-
-# Rétablir le service
-docker compose start dataset-manager-service
+./run.sh
 ```
 
----
+Cette commande compile les JARs de tous les modules puis lance l'ensemble via Docker Compose.
 
-## Tableau de bord Eureka
-
-Accessible à : http://localhost:8761
-
-Vérifie que les 3 services sont enregistrés :
-- `DATASET-MANAGER-SERVICE`
-- `GENERATOR-SERVICE`
-- `API-GATEWAY`
+**Prérequis :** Java 25, Docker, Docker Compose
 
 ---
 
-# Dataset Generator — Phases 1-3 : Monolithe
+### Endpoints (via Gateway :8080)
 
-
-
-## Description du projet
-
-Ce projet consiste à concevoir un système logiciel modulaire permettant de générer automatiquement des datasets à partir d’une définition structurée.
-
-## Architecture du système
-
-L’architecture est organisée en 4 parties principales :
-
----
-
-###  1. Domaine
-
-#### Project
-
-Représente un projet de dataset.
-
-```java
-id: Long
-name: String
-size: int
-entities: List<Entity>
+**Projets**
+```
+POST   /api/projects
+GET    /api/projects
+GET    /api/projects/{id}
+DELETE /api/projects/{id}
 ```
 
-* `size` représente le nombre d’enregistrements à générer par entité
-
----
-
-#### Entity
-
-Représente une entité métier (ex : User, Product).
-
-```java
-name: String
-attributes: List<Attribute>
-subEntities: List<Entity>
+**Entités**
+```
+POST   /api/entities/project/{projectId}
+GET    /api/entities/project/{projectId}
+GET    /api/entities/{id}
+PUT    /api/entities/{id}
+DELETE /api/entities/{id}
 ```
 
-* supporte les relations via `subEntities`
-
----
-
-#### Attribute
-
-Représente un champ d’une entité.
-
-```java
-name: String
-dataType: DataType
-constraints: List<Constraint>
+**Génération**
+```
+GET    /api/generator/{projectId}/preview
+GET    /api/generator/{projectId}/export?format=json
+GET    /api/generator/{projectId}/export?format=csv
+GET    /api/generator/{projectId}/export?format=xml
 ```
 
----
+**Types de champs disponibles**
 
-#### DataType (enum)
-
-Types supportés :
-
-* STRING
-* INTEGER
-* FLOAT
-* BOOLEAN
-* DATE
-* ENUM
+`STRING` · `INTEGER` · `FLOAT` · `BOOLEAN` · `DATE` · `ENUM` · `EMAIL` · `AUTOINCREMENT` · `NAME`
 
 ---
 
-#### Constraint (interface)
+### Communication inter-services (Feign)
 
-```java
-isValid(value: Object): boolean
-```
-
-Implémentations :
-
-* `RangeConstraint` (min, max)
-* `EnumConstraint` (liste de valeurs autorisées)
+Le `generator-service` appelle le `dataset-manager-service` via **Spring Cloud OpenFeign** pour récupérer la définition d'un projet avant de générer les données.
 
 ---
 
-## 2. Génération des données
+### Circuit Breaker (Resilience4J)
+
+Un circuit breaker protège l'appel Feign du `generator-service` vers le `dataset-manager-service` :
+
+| Paramètre | Valeur |
+|---|---|
+| Fenêtre glissante | 5 appels |
+| Seuil d'ouverture | 50% d'échecs |
+| Durée état ouvert | 10 secondes |
+| Appels en half-open | 2 |
+
+En cas de panne du `dataset-manager-service`, le `generator-service` retourne une réponse de fallback (`503`).
+
+Le gateway intègre également des circuit breakers sur chaque route, avec redirection vers `/fallback/{service}`.
 
 ---
 
-### DataGenerator (interface)
+### Tableau de bord Eureka
 
-```java
-generate(attribute: Attribute): Object
-```
+Accessible sur : http://localhost:8761
 
-Implémentations :
-
-* `RandomDataGenerator` → génération aléatoire
-* `ApiDataGenerator` → génération via API externe
-
----
-
-### GeneratorFactory
-
-```java
-getGenerator(attribute: Attribute): DataGenerator
-```
-
-Responsable de sélectionner le générateur approprié en fonction de l’attribut.
-
----
-
-### DatasetService
-
-```java
-generate(project: Project)
-```
-
-Rôle :
-
-* parcourir les entités
-* générer les données
-* utiliser `GeneratorFactory`
-* produire la structure finale :
-
-```java
-Map<String, List<Map<String, Object>>>
-```
-
----
-
-## 3. Export des données
-
----
-
-### Exporter (interface)
-
-```java
-export(entityName: String, data: List<Map<String,Object>>): String
-```
-
-Implémentations :
-
-* `CSVExporter`
-* `XMLExporter`
-
----
-
-### ExportService
-
-Responsable de l’export en utilisant un `Exporter`.
-
----
-
-## Fonctionnement global
-
-1. Création d’un `Project`
-2. Définition des entités et attributs
-3. Ajout des contraintes
-4. Définition de la taille (`size`)
-5. Génération des données via `DatasetService`
-6. Export des données via `ExportService`
-
----
-
-## Structure des données générées
-
-```java
-Map<String, List<Map<String, Object>>>
-```
-
-### Explication :
-
-* `String` → nom de l’entité
-* `List` → liste des enregistrements
-* `Map` → un enregistrement (clé = attribut)
-
----
-
-### Exemple :
-
-```json
-{
-  "User": [
-    { "name": "Jean", "age": 25 },
-    { "name": "Marie", "age": 30 }
-  ]
-}
-```
-
----
-
-## Gestion de la taille
-
-Le champ `size` dans `Project` détermine :
-
-le nombre de lignes générées pour chaque entité
-
----
-
-## Patterns utilisés
-
----
-
-### Strategy Pattern
-
-Utilisé pour :
-
-* `DataGenerator`
-* `Exporter`
-
-Permet de changer dynamiquement le comportement.
-
----
-
-### Factory Pattern
-
-Utilisé avec `GeneratorFactory`.
-
-Permet de :
-
-* sélectionner dynamiquement le générateur
-* éviter les structures conditionnelles complexes
-
----
-
-## Respect des principes SOLID
-
----
-
-### Single Responsibility Principle
-
-Chaque classe a une responsabilité unique :
-
-* `DatasetService` → génération
-* `GeneratorFactory` → création
-* `ExportService` → export
-
----
-
-### Open/Closed Principle
-
-Le système est extensible :
-
-* ajout de nouveaux générateurs
-* ajout de nouveaux formats d’export
-
-sans modification du code existant.
-
----
-
-### Liskov Substitution Principle
-
-Les implémentations de :
-
-* `DataGenerator`
-* `Exporter`
-
-peuvent être substituées sans modifier le comportement.
-
----
-
-### Interface Segregation Principle
-
-Interfaces simples :
-
-* `DataGenerator`
-* `Exporter`
-
----
-
-### Dependency Inversion Principle
-
-Les services dépendent d’abstractions :
-
-* `DatasetService` → DataGenerator
-* `ExportService` → Exporter
-
----
+Vérifie que les services `DATASET-MANAGER-SERVICE`, `GENERATOR-SERVICE` et `API-GATEWAY` sont bien enregistrés.
