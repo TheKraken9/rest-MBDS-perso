@@ -22,8 +22,6 @@ public class EntityModelMapper {
         this.attributeMapper = attributeMapper;
     }
 
-    // ─── Request → Entity ────────────────────────────────────────────────────
-
     public EntityModelEntity toEntity(CreateEntityRequest request, DatasetProjectEntity project) {
         return buildEntity(request, project, null);
     }
@@ -53,8 +51,6 @@ public class EntityModelMapper {
         return entity;
     }
 
-    // ─── Update ──────────────────────────────────────────────────────────────
-
     public void updateEntity(EntityModelEntity entity, UpdateEntityRequest request) {
         entity.setName(request.getName());
         entity.setRowCount(request.getRowCount());
@@ -74,15 +70,13 @@ public class EntityModelMapper {
         }
     }
 
-    // ─── Entity → Response ───────────────────────────────────────────────────
-
     public EntityResponse toResponse(EntityModelEntity entity) {
         List<AttributeResponse> fields = entity.getAttributes().stream()
                 .map(attributeMapper::toResponse)
                 .toList();
 
         List<EntityResponse> subResponses = entity.getSubEntities().stream()
-                .map(this::toResponse)   // récursif
+                .map(this::toResponse)
                 .toList();
 
         return new EntityResponse(

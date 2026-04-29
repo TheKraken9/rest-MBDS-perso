@@ -20,11 +20,6 @@ public class EntityModelEntity {
     @Column(nullable = false)
     private String name;
 
-    /**
-     * Nombre de lignes à générer pour cette entité.
-     * Nullable : si absent, on se rabat sur la taille du projet (project.size).
-     * Pour une sous-entité c'est le nombre d'occurrences PAR ligne parente.
-     */
     @Column(nullable = true)
     private Integer rowCount;
 
@@ -36,10 +31,6 @@ public class EntityModelEntity {
     @JoinColumn(name = "parent_entity_id")
     private EntityModelEntity parentEntity;
 
-    /**
-     * orphanRemoval = true : quand on vide la liste (updateEntity),
-     * les anciennes sous-entités sont bien supprimées en base.
-     */
     @OneToMany(mappedBy = "parentEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EntityModelEntity> subEntities = new ArrayList<>();
 
